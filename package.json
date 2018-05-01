@@ -15,5 +15,9 @@
   "bugs": {
     "url": "https://github.com/sitcomlab/SP-RCARAP/issues"
   },
-  "homepage": "https://github.com/sitcomlab/SP-RCARAP#readme"
+  "homepage": "https://github.com/sitcomlab/SP-RCARAP#readme",
+  "dependencies": {
+    "express": "^4.16.3",
+    "peer": "^0.2.8"
+  }
 }

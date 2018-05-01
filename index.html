@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/0.3.14/peer.min.js"></script>
+    <script src="js/connect-peer.js"></script>
+</head>
+<body>
+<h4 class="text-center">
+    <span id="peer-id-label"></span>
+</h4>
+
+Your PeerJS id is : <span id="pid"></span><br><br>
+Connect to peer: <input type="text" id="peerConnect">
+<input type="button" value="Connect" id="connect"><br><br>
+
+
+<div id="chat_area" style="display: none;">
+    <div id="messages"></div>
+    <input type="text" id="text" placeholder="Enter message">
+    <input type="button" value="Send" id="send">
+</div>
+</body>
+
+</html>

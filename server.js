@@ -1,6 +1,3 @@
-/**
- * Created by pglah on 30.04.2018.
- */
 var express = require('express')
 var app = express()
 var path = require('path');

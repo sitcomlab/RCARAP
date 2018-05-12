@@ -1,0 +1,8 @@
+#files
+
+#npm
+node_modules/
+npm-debug.log
+
+#IDE rubbish
+.idea/

@@ -1,0 +1,15 @@
+{
+  "name": "realsense",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "node-librealsense": "^0.2103.0",
+    "opencv4nodejs": "^4.4.0"
+  }
+}

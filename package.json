@@ -2,9 +2,9 @@
   "name": "sp-rcarap",
   "version": "1.0.0",
   "description": "Supporting Remote Collaboration with Augmented Reality and Architectural Plans",
-  "main": "server.js",
+  "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "electron ."
   },
   "repository": {
     "type": "git",
@@ -17,9 +17,11 @@
   },
   "homepage": "https://github.com/sitcomlab/SP-RCARAP#readme",
   "dependencies": {
+    "electron": "^2.0.0",
+    "electron-rebuild": "^1.7.3",
     "express": "^4.16.3",
     "node-librealsense": "^0.2103.0",
     "opencv4nodejs": "^4.5.0",
-    "peer": "^0.2.8"
+    "node-glfw-3": "^0.3.3"
   }
 }

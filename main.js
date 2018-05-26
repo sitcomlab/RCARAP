@@ -6,7 +6,6 @@ const BrowserWindow = electron.BrowserWindow
 
 const path = require('path')
 const url = require('url')
-const video = require('./video')
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -32,13 +31,14 @@ function createWindow() {
 }
 
 app.on('ready', () => {
-    //createWindow();
-    video.setWindowIsOpen(true);
-    video.startVideo();
+    //video.setWindowIsOpen(true);
+    //video.startVideo();
+    createWindow();
+    
 })
 
 app.on('window-all-closed', function() {
-    video.setWindowIsOpen(false);
+    //video.setWindowIsOpen(false);
     if (process.platform !== 'darwin') {
         app.quit()
     }

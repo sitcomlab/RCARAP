@@ -1,15 +1,15 @@
 const electron = require('electron')
-    // Module to control application life.
 const app = electron.app
-    // Module to create native browser window.
 const BrowserWindow = electron.BrowserWindow
 
 const path = require('path')
 const url = require('url')
+const ipcMain = require('electron').ipcMain;
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow;
+let backgroundWindow;
 let windowIsOpen = false;
 
 function createWindow() {
@@ -18,15 +18,28 @@ function createWindow() {
         height: 600
     })
 
-    // load index.html
+    backgroundWindow = new BrowserWindow({
+        width: 800,
+        height: 600,
+        show: false
+    })
+
     mainWindow.loadURL(url.format({
         pathname: path.join(__dirname, 'index.html'),
+        protocol: 'file:',
+        slashes: true
+    }))
+    backgroundWindow.loadURL(url.format({
+        pathname: path.join(__dirname, 'background.html'),
         protocol: 'file:',
         slashes: true
     }))
 
     mainWindow.on('closed', function() {
         mainWindow = null
+    })
+    backgroundWindow.on('closed', function() {
+        backgroundWindow = null
     })
 }
 
@@ -49,3 +62,7 @@ app.on('activate', function() {
         createWindow()
     }
 })
+
+ipcMain.on('camera-data', function(event, data) {
+  mainWindow.webContents.send('camera-data', data)
+});

@@ -34,6 +34,10 @@ function joinSession() {
             cv.imshow("videoStream", outputMat);
             win.endPaint();
         });
+        ipcRenderer.on('camera-data', function(event, data) {
+            console.log("sending");
+            socket.emit('serverEvent', data);
+        });
     });
 }
 
@@ -43,7 +47,10 @@ function createServerSesson() {
     io.on('connection', function(socket) {
         console.log('connected:', socket.client.id);
         socket.on('serverEvent', function(data) {
-            console.log('new message from client:', data);
+            console.log("incoming")
+            const outputMat = new cv.Mat(data.data, data.rows, data.cols, cv.CV_8UC3);
+            cv.imshow("videoStream", outputMat);
+            win.endPaint();
         });
         ipcRenderer.on('camera-data', function(event, data) {
             console.log("sending");

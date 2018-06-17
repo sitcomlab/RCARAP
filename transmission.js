@@ -27,11 +27,15 @@ function joinSession() {
     });
 
     socket.on('connect', function() {
-        console.log('connected to localhost:3000');
+        console.log('connected');
         socket.on('clientEvent', function(data) {
-            console.log("incoming")
-            const outputMat = new cv.Mat(data.data, data.rows, data.cols, cv.CV_8UC3);
-            cv.imshow("videoStream", outputMat);
+            const base64text= data.base64String;
+            const base64data = base64text.replace('data:image/jpeg;base64','')
+                                        .replace('data:image/png;base64','');
+            const buffer = Buffer.from(base64data,'base64');
+            const base64image = cv.imdecode(buffer);
+            cv.imshow("videoStream", base64image);
+            cv.waitKey(1)
             win.endPaint();
         });
         ipcRenderer.on('camera-data', function(event, data) {
@@ -47,9 +51,13 @@ function createServerSesson() {
     io.on('connection', function(socket) {
         console.log('connected:', socket.client.id);
         socket.on('serverEvent', function(data) {
-            console.log("incoming")
-            const outputMat = new cv.Mat(data.data, data.rows, data.cols, cv.CV_8UC3);
-            cv.imshow("videoStream", outputMat);
+            const base64text= data.base64String;
+            const base64data = base64text.replace('data:image/jpeg;base64','')
+                                        .replace('data:image/png;base64','');
+            const buffer = Buffer.from(base64data,'base64');
+            const base64image = cv.imdecode(buffer);
+            cv.imshow("videoStream", base64image);
+            cv.waitKey(1)
             win.endPaint();
         });
         ipcRenderer.on('camera-data', function(event, data) {

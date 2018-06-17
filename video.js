@@ -12,7 +12,8 @@ while (windowIsOpen) {
     if (depthMap) {
         const color = frameset.colorFrame;
         const colorMat = new cv.Mat(color.data, color.height, color.width, cv.CV_8UC3);
-        ipcRenderer.send('camera-data',{data: colorMat.getData(), rows: colorMat.rows, cols: colorMat.cols});
+        const outBase64 =  cv.imencode('.jpg', colorMat).toString('base64');
+        ipcRenderer.send('camera-data',{base64String: outBase64});
     }
 
 }

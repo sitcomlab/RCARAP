@@ -30,8 +30,7 @@ function joinSession() {
         console.log('connected');
         socket.on('clientEvent', function(data) {
             const base64text= data.base64String;
-            const base64data = base64text.replace('data:image/jpeg;base64','')
-                                        .replace('data:image/png;base64','');
+            const base64data = base64text.replace('data:image/jpeg;base64','');
             const buffer = Buffer.from(base64data,'base64');
             const base64image = cv.imdecode(buffer);
             cv.imshow("videoStream", base64image);

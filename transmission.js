@@ -3,13 +3,10 @@
 // All of the Node.js APIs are available in this process.
 var io;
 const cv = require('opencv4nodejs');
-const {
-    GLFWWindow
-} = require('./glfw-window.js');
-const win = new GLFWWindow(1280, 720, 'Node.js Capture Example');
+
 
 const ipcRenderer = require('electron').ipcRenderer;
-win.beginPaint();
+
 
 document.getElementById('createSession').addEventListener("click", function() {
     createServerSesson();
@@ -35,7 +32,6 @@ function joinSession() {
             const base64image = cv.imdecode(buffer);
             cv.imshow("videoStream", base64image);
             cv.waitKey(1)
-            win.endPaint();
         });
         ipcRenderer.on('camera-data', function(event, data) {
             console.log("sending");
@@ -50,6 +46,7 @@ function createServerSesson() {
     io.on('connection', function(socket) {
         console.log('connected:', socket.client.id);
         socket.on('serverEvent', function(data) {
+			console.log("incoming");
             const base64text= data.base64String;
             const base64data = base64text.replace('data:image/jpeg;base64','')
                                         .replace('data:image/png;base64','');
@@ -57,7 +54,6 @@ function createServerSesson() {
             const base64image = cv.imdecode(buffer);
             cv.imshow("videoStream", base64image);
             cv.waitKey(1)
-            win.endPaint();
         });
         ipcRenderer.on('camera-data', function(event, data) {
             console.log("sending");

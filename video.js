@@ -7,8 +7,9 @@ const cv = require('opencv4nodejs');
 const ipcRenderer = require('electron').ipcRenderer;
 const pipeline = new rs2.Pipeline();
 const align = new rs2.Align(rs2.stream.STREAM_COLOR);
+const electron = require('electron');
 var isPrinted = false;
-let initalClippingDist = 1.165;
+let initalClippingDist = 1.1;
 console.log('Press Up/Down to change the depth clipping distance.');
 /*console.log(this);
 this.window.setKeyCallback((key, scancode, action, modes) => {
@@ -80,11 +81,11 @@ function removeBackground(otherFrame, depthFrame, depthScale) {
         let depthPixelIndex = y * width;
         for (let x = 0; x < width; x++, ++depthPixelIndex) {
             let pixelDistance = depthScale * depthData[depthPixelIndex];
-            var factor = 0.065;
-            clippingDist = initalClippingDist - (y/100) * factor;
+            //var factor = 0.065;
+            //clippingDist = initalClippingDist - (y/100) * factor;
             //if(!isPrinted)
                 //ipcRenderer.send('log',{message: clippingDist + " pixelDistance: " + pixelDistance});
-            if (pixelDistance <= 0 || pixelDistance > clippingDist) {
+            if (pixelDistance <= 0 || pixelDistance > initalClippingDist) {
                 let offset = depthPixelIndex * otherBpp;
 
                 // Set pixel to background color
@@ -212,7 +213,10 @@ function recognizeHands(colorMat) {
 
 // main
     const delay = 20;
-    const resizedImg = colorMat.resizeToMax(1280);
+    //const resizedImg = colorMat.resizeToMax(1280);
+    //let resizedImg;
+    //cv.Resize(colorMat,resizedImg,1280,2);
+    const resizedImg = colorMat.resize(1080,1920);
 
 //            while(true){
     const handMask = makeHandMask(resizedImg);

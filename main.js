@@ -46,6 +46,11 @@ function createWindow() {
 app.on('ready', () => {
     //video.setWindowIsOpen(true);
     //video.startVideo();
+    // var screenElectron = electron.screen;
+    // var mainScreen = screenElectron.getPrimaryDisplay();
+    // var dimensions = mainScreen.size;
+    // console.log(mainScreen);
+    // console.log(dimensions);
     createWindow();
     
 })
@@ -65,4 +70,7 @@ app.on('activate', function() {
 
 ipcMain.on('camera-data', function(event, data) {
   mainWindow.webContents.send('camera-data', data)
+});
+ipcMain.on('log', function(event, data) {
+    console.log(data.message);
 });

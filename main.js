@@ -44,13 +44,6 @@ function createWindow() {
 }
 
 app.on('ready', () => {
-    //video.setWindowIsOpen(true);
-    //video.startVideo();
-    // var screenElectron = electron.screen;
-    // var mainScreen = screenElectron.getPrimaryDisplay();
-    // var dimensions = mainScreen.size;
-    // console.log(mainScreen);
-    // console.log(dimensions);
     createWindow();
     
 })

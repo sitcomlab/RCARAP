@@ -38,7 +38,6 @@ function joinSession() {
         _socket = socket;
         targetRole = "server";
         socket.on('clientEvent', function(data) {
-            debugger
             const base64text= data.base64String;
             const base64data = base64text.replace('data:image/jpeg;base64','');
             const buffer = Buffer.from(base64data,'base64');
@@ -69,8 +68,6 @@ function createServerSesson() {
         _socket = socket;
         targetRole = "client";
         socket.on('serverEvent', function(data) {
-			console.log("incoming");
-			debugger
             const base64text= data.base64String;
             const base64data = base64text.replace('data:image/jpeg;base64','')
                                         .replace('data:image/png;base64','');
@@ -123,6 +120,7 @@ function calibrate() {
     }
 }
 
+
 function detectSquares(mat) {
     let gray = mat.bgrToGray();
     let canny = gray.canny(200,255,3,false);
@@ -165,3 +163,4 @@ const getCoord = (binaryImg, dstImg, minPxSize, fixedRectWidth) => {
     }
 
 };
+

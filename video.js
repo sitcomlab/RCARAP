@@ -7,7 +7,6 @@ const cv = require('opencv4nodejs');
 const ipcRenderer = require('electron').ipcRenderer;
 const pipeline = new rs2.Pipeline();
 const align = new rs2.Align(rs2.stream.STREAM_COLOR);
-const electron = require('electron');
 var isPrinted = false;
 let initalClippingDist = 1.1;
 console.log('Press Up/Down to change the depth clipping distance.');
@@ -214,8 +213,6 @@ function recognizeHands(colorMat) {
 // main
     const delay = 20;
     //const resizedImg = colorMat.resizeToMax(1280);
-    //let resizedImg;
-    //cv.Resize(colorMat,resizedImg,1280,2);
     const resizedImg = colorMat.resize(1080,1920);
 
 //            while(true){

@@ -114,6 +114,7 @@ function calibrate() {
             { color: green, thickness: 2 });
         //cv.imshow("test", whiteMat);
         //cv.waitKey();
+        detectSquares(whiteMat);
         const outBase64 =  cv.imencode('.jpg', whiteMat).toString('base64');
         let data = {base64String: outBase64, mode: "calibration"};
         let eventName = targetRole+"Event";
@@ -121,3 +122,46 @@ function calibrate() {
         _socket.emit(eventName, data);
     }
 }
+
+function detectSquares(mat) {
+    let gray = mat.bgrToGray();
+    let canny = gray.canny(200,255,3,false);
+
+    const dilated = canny.dilate(
+        cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(4, 4)),
+        new cv.Point(-1, -1),
+        2
+    );
+
+    const blurred = dilated.blur(new cv.Size(10, 10));
+    const thresholded = blurred.threshold(200, 255, cv.THRESH_BINARY);
+
+    const minPxSize = 100;
+    getCoord(thresholded, mat, minPxSize);
+
+    cv.imshow('canny', canny);
+    cv.waitKey()
+    //cv.imshow('frame', mat);
+    cv.waitKey()
+    cv.imshow('thresholded', thresholded);
+    cv.waitKey()
+}
+
+const getCoord = (binaryImg, dstImg, minPxSize, fixedRectWidth) => {
+    const {
+        centroids,
+        stats
+    } = binaryImg.connectedComponentsWithStats();
+
+    // pretend label 0 is background
+    for (let label = 1; label < centroids.rows; label += 1) {
+        const [x1, y1] = [stats.at(label, cv.CC_STAT_LEFT), stats.at(label, cv.CC_STAT_TOP)];
+        const [x2, y2] = [
+            x1 + (fixedRectWidth || stats.at(label, cv.CC_STAT_WIDTH)),
+            y1 + (fixedRectWidth || stats.at(label, cv.CC_STAT_HEIGHT))
+        ];
+        console.log(x1,y1);
+        console.log(x2,y2);
+    }
+
+};

@@ -1,63 +1,106 @@
-let windowIsOpen = true;
 console.log("starting");
 const rs2 = require('node-librealsense/index.js');
-//distance in depth image in different colors
-const colorizer = new rs2.Colorizer();
 const cv = require('opencv4nodejs');
 const ipcRenderer = require('electron').ipcRenderer;
+//distance in depth image in different colors
+const colorizer = new rs2.Colorizer();
 const pipeline = new rs2.Pipeline();
 const align = new rs2.Align(rs2.stream.STREAM_COLOR);
 var isPrinted = false;
 let initalClippingDist = 1.1;
-console.log('Press Up/Down to change the depth clipping distance.');
+let calibrated = false;
+let startedStreaming = false;
+let gotCoordinates = false;
+ipcRenderer.on('started-calibrating', function (event) {
+    ipcRenderer.send('log', {message: "test, started-calibrating"});
+    if (!startedStreaming) {
+            stream();
+    }
+});
+//console.log('Press Up/Down to change the depth clipping distance.');
 /*console.log(this);
-this.window.setKeyCallback((key, scancode, action, modes) => {
-    if (action != 0) return;
+ this.window.setKeyCallback((key, scancode, action, modes) => {
+ if (action != 0) return;
 
-if (key === 265) {
-    // Pressed: Up arrow key
-    clippingDistance += 0.1;
-    if (clippingDistance > 6.0) {
-        clippingDistance = 6.0;
-    }
-} else if (key === 264) {
-    // Pressed: Down arrow key
-    clippingDistance -= 0.1;
-    if (clippingDistance < 0) {
-        clippingDistance = 0;
-    }
-}
-console.log('Depth clipping distance:', clippingDistance.toFixed(3));
-});*/
+ if (key === 265) {
+ // Pressed: Up arrow key
+ clippingDistance += 0.1;
+ if (clippingDistance > 6.0) {
+ clippingDistance = 6.0;
+ }
+ } else if (key === 264) {
+ // Pressed: Down arrow key
+ clippingDistance -= 0.1;
+ if (clippingDistance < 0) {
+ clippingDistance = 0;
+ }
+ }
+ console.log('Depth clipping distance:', clippingDistance.toFixed(3));
+ });*/
+function stream() {
 
-var profile = pipeline.start();
+    ipcRenderer.send('log', {message: "startedStreaming:" + startedStreaming});
+    startedStreaming = true;
+    const profile = pipeline.start();
 
-const depthScale = tryGetDepthScale(profile.getDevice());
-if (depthScale === undefined) {
-    console.error('Device does not have a depth sensor');
-    process.exit(1);
-}
-
-while (windowIsOpen) {
-    const rawFrameset = pipeline.waitForFrames();
-    const alignedFrameset = align.process(rawFrameset);
-    let colorFrame = alignedFrameset.colorFrame;
-    let depthFrame = alignedFrameset.depthFrame;
-    if (colorFrame && depthFrame) {
-        removeBackground(colorFrame, depthFrame, depthScale);
-        const colorMat = new cv.Mat(colorFrame.data, colorFrame.height, colorFrame.width, cv.CV_8UC3);
-
-        let result = recognizeHands(colorMat);
-
-        const outBase64 =  cv.imencode('.jpg', result).toString('base64');
-        ipcRenderer.send('camera-data',{base64String: outBase64});
+    for(let i = 0; i < 150; i++)
+    {
+        //Wait for all configured streams to produce a frame
+        pipeline.waitForFrames();
     }
 
+    const depthScale = tryGetDepthScale(profile.getDevice());
+    if (depthScale === undefined) {
+        console.error('Device does not have a depth sensor');
+        process.exit(1);
+    }
+    let temp = false;
+    while (true) {
+        const rawFrameset = pipeline.waitForFrames();
+        const alignedFrameset = align.process(rawFrameset);
+        let colorFrame = alignedFrameset.colorFrame;
+        let depthFrame = alignedFrameset.depthFrame;
+        if (colorFrame && depthFrame) {
+            if (!calibrated && !temp) {
+                temp = true;
+                const calibrationColorMat = new cv.Mat(colorFrame.data, colorFrame.height, colorFrame.width, cv.CV_8UC3);
+                colorDetection(calibrationColorMat);
+                /*let frameset = pipeline.waitForFrames();
+                for (let i = 0; i < frameset.size; i++) {
+                    if(i == 29){
+                        ipcRenderer.send('log', {message: "frameset: " + frameset.size});
+                        let frame = frameset.at(i);
+                        let align = align.process(frame);
+                        let colFrame = align.colorFrame;
+                        let colMat = new cv.Mat(colFrame.data, colFrame.height, colFrame.width, cv.CV_8UC3);
+                        colorDetection(colMat);
+                    }
+                }*/
+                /*while (frameset.size == 150){
+                    ipcRenderer.send('log', {message: "frameset: " + frameset});
+                    let frame = frameset.at(i);
+                    let align = align.process(frame);
+                    let colFrame = align.colorFrame;
+                    let colMat = new cv.Mat(colFrame.data, colFrame.height, colFrame.width, cv.CV_8UC3);
+                    colorDetection(colMat);
+                }*/
+            } else {
+                removeBackground(colorFrame, depthFrame, depthScale);
+                const colorMat = new cv.Mat(colorFrame.data, colorFrame.height, colorFrame.width, cv.CV_8UC3);
+
+                let result = recognizeHands(colorMat);
+
+                const outBase64 = cv.imencode('.jpg', result).toString('base64');
+                ipcRenderer.send('camera-data', {base64String: outBase64});
+            }
+        }
+
+    }
+
+    pipeline.stop();
+    pipeline.destroy();
+    rs2.cleanup();
 }
-pipeline.stop();
-pipeline.destroy();
-win.destroy();
-rs2.cleanup();
 
 function tryGetDepthScale(dev) {
     const sensors = dev.querySensors();
@@ -83,7 +126,7 @@ function removeBackground(otherFrame, depthFrame, depthScale) {
             //var factor = 0.065;
             //clippingDist = initalClippingDist - (y/100) * factor;
             //if(!isPrinted)
-                //ipcRenderer.send('log',{message: clippingDist + " pixelDistance: " + pixelDistance});
+            //ipcRenderer.send('log',{message: clippingDist + " pixelDistance: " + pixelDistance});
             if (pixelDistance <= 0 || pixelDistance > initalClippingDist) {
                 let offset = depthPixelIndex * otherBpp;
 
@@ -128,7 +171,7 @@ function recognizeHands(colorMat) {
     const getCenterPt = pts => pts.reduce(
         (sum, pt) => sum.add(pt),
         new cv.Point(0, 0)
-    ).div(pts.length);
+).div(pts.length);
 
 // get the polygon from a contours hull such that there
 // will be only a single hull point for a local neighborhood
@@ -137,9 +180,9 @@ function recognizeHands(colorMat) {
         const hullIndices = contour.convexHullIndices();
         const contourPoints = contour.getPoints();
         const hullPointsWithIdx = hullIndices.map(idx => ({
-            pt: contourPoints[idx],
-            contourIdx: idx
-        }));
+                pt: contourPoints[idx],
+                contourIdx: idx
+            }));
         const hullPoints = hullPointsWithIdx.map(ptWithIdx => ptWithIdx.pt);
 
         // group all points in local neighborhood
@@ -151,8 +194,8 @@ function recognizeHands(colorMat) {
         labels.forEach(l => pointsByLabel.set(l, []));
         hullPointsWithIdx.forEach((ptWithIdx, i) => {
             const label = labels[i];
-            pointsByLabel.get(label).push(ptWithIdx);
-        });
+        pointsByLabel.get(label).push(ptWithIdx);
+    });
 
         // map points in local neighborhood to most central point
         const getMostCentralPoint = (pointGroup) => {
@@ -160,8 +203,8 @@ function recognizeHands(colorMat) {
             const center = getCenterPt(pointGroup.map(ptWithIdx => ptWithIdx.pt));
             // sort ascending by distance to center
             return pointGroup.sort(
-                (ptWithIdx1, ptWithIdx2) => ptDist(ptWithIdx1.pt, center) - ptDist(ptWithIdx2.pt, center)
-            )[0];
+                    (ptWithIdx1, ptWithIdx2) => ptDist(ptWithIdx1.pt, center) - ptDist(ptWithIdx2.pt, center)
+        )[0];
         };
         const pointGroups = Array.from(pointsByLabel.values());
         // return contour indeces of most central points
@@ -176,35 +219,35 @@ function recognizeHands(colorMat) {
         const hullPointDefectNeighbors = new Map(hullIndices.map(idx => [idx, []]));
         defects.forEach((defect) => {
             const startPointIdx = defect.at(0);
-            const endPointIdx = defect.at(1);
-            const defectPointIdx = defect.at(2);
-            hullPointDefectNeighbors.get(startPointIdx).push(defectPointIdx);
-            hullPointDefectNeighbors.get(endPointIdx).push(defectPointIdx);
-        });
+        const endPointIdx = defect.at(1);
+        const defectPointIdx = defect.at(2);
+        hullPointDefectNeighbors.get(startPointIdx).push(defectPointIdx);
+        hullPointDefectNeighbors.get(endPointIdx).push(defectPointIdx);
+    });
 
         return Array.from(hullPointDefectNeighbors.keys())
-        // only consider hull points that have 2 neighbor defects
-            .filter(hullIndex => hullPointDefectNeighbors.get(hullIndex).length > 1)
-            // return vertex points
-            .map((hullIndex) => {
-                const defectNeighborsIdx = hullPointDefectNeighbors.get(hullIndex);
-                return ({
-                    pt: handContourPoints[hullIndex],
-                    d1: handContourPoints[defectNeighborsIdx[0]],
-                    d2: handContourPoints[defectNeighborsIdx[1]]
-                });
-            });
+            // only consider hull points that have 2 neighbor defects
+                .filter(hullIndex => hullPointDefectNeighbors.get(hullIndex).length > 1)
+        // return vertex points
+    .map((hullIndex) => {
+            const defectNeighborsIdx = hullPointDefectNeighbors.get(hullIndex);
+        return ({
+            pt: handContourPoints[hullIndex],
+            d1: handContourPoints[defectNeighborsIdx[0]],
+            d2: handContourPoints[defectNeighborsIdx[1]]
+        });
+    });
     };
 
     const filterVerticesByAngle = (vertices, maxAngleDeg) =>
-        vertices.filter((v) => {
-            const sq = x => x * x;
-            const a = v.d1.sub(v.d2).norm();
-            const b = v.pt.sub(v.d1).norm();
-            const c = v.pt.sub(v.d2).norm();
-            const angleDeg = Math.acos(((sq(b) + sq(c)) - sq(a)) / (2 * b * c)) * (180 / Math.PI);
-            return angleDeg < maxAngleDeg;
-        });
+    vertices.filter((v) => {
+        const sq = x => x * x;
+    const a = v.d1.sub(v.d2).norm();
+    const b = v.pt.sub(v.d1).norm();
+    const c = v.pt.sub(v.d2).norm();
+    const angleDeg = Math.acos(((sq(b) + sq(c)) - sq(a)) / (2 * b * c)) * (180 / Math.PI);
+    return angleDeg < maxAngleDeg;
+});
 
     const blue = new cv.Vec(255, 0, 0);
     const green = new cv.Vec(0, 255, 0);
@@ -246,32 +289,32 @@ function recognizeHands(colorMat) {
 // draw points and vertices
     verticesWithValidAngle.forEach((v) => {
         resizedImg.drawLine(
-            v.pt,
-            v.d1, {
-                color: green,
-                thickness: 2
-            }
-        );
-        resizedImg.drawLine(
-            v.pt,
-            v.d2, {
-                color: green,
-                thickness: 2
-            }
-        );
-        resizedImg.drawEllipse(
-            new cv.RotatedRect(v.pt, new cv.Size(20, 20), 0), {
-                color: red,
-                thickness: 2
-            }
-        );
-        result.drawEllipse(
-            new cv.RotatedRect(v.pt, new cv.Size(20, 20), 0), {
-                color: red,
-                thickness: 2
-            }
-        );
-    });
+        v.pt,
+        v.d1, {
+            color: green,
+            thickness: 2
+        }
+    );
+    resizedImg.drawLine(
+        v.pt,
+        v.d2, {
+            color: green,
+            thickness: 2
+        }
+    );
+    resizedImg.drawEllipse(
+        new cv.RotatedRect(v.pt, new cv.Size(20, 20), 0), {
+            color: red,
+            thickness: 2
+        }
+    );
+    result.drawEllipse(
+        new cv.RotatedRect(v.pt, new cv.Size(20, 20), 0), {
+            color: red,
+            thickness: 2
+        }
+    );
+});
 
 
 // display detection result
@@ -301,4 +344,84 @@ function recognizeHands(colorMat) {
     } = result;
 
     return result;
+}
+
+function detectSquares(mat) {
+    let canny = mat.canny(200, 255, 3, false);
+
+    const dilated = canny.dilate(
+        cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(4, 4)),
+        new cv.Point(-1, -1),
+        2
+    );
+
+    const blurred = dilated.blur(new cv.Size(10, 10));
+    const thresholded = blurred.threshold(200, 255, cv.THRESH_BINARY);
+
+    const minPxSize = 100;
+    if(gotCoordinates == false){
+        gotCoordinates = true;
+        getCoord(thresholded, mat, minPxSize);
+    }
+}
+
+const getCoord = (binaryImg, dstImg, minPxSize, fixedRectWidth) =>
+{
+    const {
+        centroids,
+        stats
+    } = binaryImg.connectedComponentsWithStats();
+
+    let counter = 0;
+    let coordArray = [];
+
+    // pretend label 0 is background
+    for (let label = 1; label < centroids.rows; label += 1) {
+        const [x1, y1] = [stats.at(label, cv.CC_STAT_LEFT), stats.at(label, cv.CC_STAT_TOP)];
+        const [x2, y2] = [
+            x1 + (fixedRectWidth || stats.at(label, cv.CC_STAT_WIDTH)),
+            y1 + (fixedRectWidth || stats.at(label, cv.CC_STAT_HEIGHT))
+        ];
+        counter++;
+        ipcRenderer.send('log', {message: "counter: " + counter});
+        //console.log(x1,y1);
+        //console.log(x2,y2);
+        coordArray.push([x1, y1, x2, y2]);
+        const blue = new cv.Vec(255, 0, 0);
+        dstImg.drawRectangle(
+            new cv.Point(x1, y1),
+            new cv.Point(x2, y2),
+            { color: blue, thickness: 2 }
+        );
+        //if(counter == 4) {
+            //ipcRenderer.send('log', {message: "x1: " + x1 + "y1: " + y1 + "x2: " + x2 + "y2: " + y2});
+        //}
+    }
+    cv.imshow('hehetz', dstImg);
+    cv.waitKey();
+    ipcRenderer.send('log', {message: "coordArray: " + coordArray});
+
+}
+
+const drawRect = (image, rect, color, opts = { thickness: 2 }) =>
+image.drawRectangle(
+    rect,
+    color,
+    opts.thickness,
+    cv.LINE_8
+);
+
+function colorDetection(mat){
+    const imgHSV = mat.cvtColor(cv.COLOR_BGR2HSV);
+    lower_hsv_threshold = new cv.Vec3(40, 40, 40); //green:60,255,255
+    upper_hsv_threshold = new cv.Vec3(80, 255, 255);
+
+    const testMat = imgHSV.inRange(lower_hsv_threshold,upper_hsv_threshold);
+    //cv.imshow('jfjfv', testMat);
+    //cv.waitKey(1);
+    detectSquares(testMat);
+}
+
+function resizeStream(){
+
 }

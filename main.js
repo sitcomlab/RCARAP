@@ -10,7 +10,7 @@ const ipcMain = require('electron').ipcMain;
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow;
 let backgroundWindow;
-let windowIsOpen = false;
+//let keepStreaming = false;
 
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -21,7 +21,7 @@ function createWindow() {
     backgroundWindow = new BrowserWindow({
         width: 800,
         height: 600,
-        show: false
+        show: true
     })
 
     mainWindow.loadURL(url.format({
@@ -66,4 +66,7 @@ ipcMain.on('camera-data', function(event, data) {
 });
 ipcMain.on('log', function(event, data) {
     console.log(data.message);
+});
+ipcMain.on('started-calibrating', function(event) {
+    backgroundWindow.webContents.send('started-calibrating')
 });

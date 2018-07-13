@@ -5,3 +5,6 @@ npm-debug.log
 
 #IDE rubbish
 .idea/
+
+build/
+package-lock.json

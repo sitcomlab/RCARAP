@@ -15,6 +15,8 @@ let maxX;
 let maxY;
 let minX;
 let minY;
+let screenHeight = 750;
+let sceenWidth = 1300;
 ipcRenderer.on('started-calibrating', function (event) {
     ipcRenderer.send('log', {message: "test, started-calibrating"});
     if (!startedStreaming) {
@@ -62,22 +64,22 @@ function stream() {
     let temp = false;
     while (true) {
         const rawFrameset = pipeline.waitForFrames();
-        ipcRenderer.send('log', {message: "rawheight: " + rawFrameset.colorFrame.height + "  rawwidth: "+rawFrameset.colorFrame.width});
+        //ipcRenderer.send('log', {message: "rawheight: " + rawFrameset.colorFrame.height + "  rawwidth: "+rawFrameset.colorFrame.width});
         const alignedFrameset = align.process(rawFrameset);
         let colorFrame = alignedFrameset.colorFrame;
         let depthFrame = alignedFrameset.depthFrame;
-        ipcRenderer.send('log', {message: "temp: " + temp + "  cli: "+calibrated});
+        //ipcRenderer.send('log', {message: "temp: " + temp + "  cli: "+calibrated});
         if (colorFrame && depthFrame) {
             if (!calibrated && !temp) {
                 temp = true;
                 const calibrationColorMat = new cv.Mat(colorFrame.data, colorFrame.height, colorFrame.width, cv.CV_8UC3);
-                ipcRenderer.send('log', {message: "height: " + colorFrame.height + "  width: "+colorFrame.width});
+                //ipcRenderer.send('log', {message: "height: " + colorFrame.height + "  width: "+colorFrame.width});
                 colorDetection(calibrationColorMat);
                 calibrated = true;
                 //Resize colormat
 
             } else {
-                ipcRenderer.send('log', {message: "test"});
+                //ipcRenderer.send('log', {message: "test"});
                 removeBackground(colorFrame, depthFrame, depthScale);
                 const colorMat = new cv.Mat(colorFrame.data, colorFrame.height, colorFrame.width, cv.CV_8UC3);
                 let croppedIMG = colorMat.getRegion(new cv.Rect(minX, minY, maxX-minX, maxY-minY));
@@ -86,12 +88,12 @@ function stream() {
                 //cv.waitKey(1);
 
                 //let resultC = recognizeHands(croppedIMG);
-                let result = croppedIMG.resize(750,1300);
-                cv.imshow("result",result);
-                cv.waitKey(1);
+                let result = croppedIMG.resize(screenHeight,screenWidth);
+                //cv.imshow("result",result);
+                //cv.waitKey(1);
 
-                //const outBase64 = cv.imencode('.jpg', result).toString('base64');
-                //ipcRenderer.send('camera-data', {base64String: outBase64});
+                const outBase64 = cv.imencode('.jpg', result).toString('base64');
+                ipcRenderer.send('camera-data', {base64String: outBase64});
             }
         }
 
@@ -350,6 +352,7 @@ function detectSquares(mat) {
     let canny = mat.canny(100, 255, 3, false); //(200,255,3,false)
     //const canny = ca.resize(750,1300);
     //cv.imshow("canny",canny);
+    //cv.waitKey();
 
     const dilated = canny.dilate(
         cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(4, 4)),

@@ -5,6 +5,8 @@ var io;
 const cv = require('opencv4nodejs');
 var _socket;
 var targetRole;
+let screenHeight = 750;
+let sceenWidth = 1300;
 
 
 const ipcRenderer = require('electron').ipcRenderer;
@@ -86,7 +88,7 @@ function createServerSesson() {
 function calibrate() {
     //TODO: screen size not the same for every laptop; not a stream?
     if(_socket){
-        const whiteMat = new cv.Mat(1050, 1920, cv.CV_8UC3, [255, 255, 255]);
+        const whiteMat = new cv.Mat(screenHeight,screenWidth, cv.CV_8UC3, [255, 255, 255]);//1080,1920 /////750,1300
         let green = new cv.Vec3(89, 255, 0);
         let buffer = 20;
         whiteMat.drawRectangle(new cv.Point(0+buffer, 0+buffer),

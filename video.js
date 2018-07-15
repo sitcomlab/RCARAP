@@ -352,8 +352,8 @@ function recognizeHands(colorMat) {
 function detectSquares(mat) {
     let canny = mat.canny(100, 255, 3, false); //(200,255,3,false)
     //const canny = ca.resize(750,1300);
-    cv.imshow("canny",canny);
-    cv.waitKey();
+   // cv.imshow("canny",canny);
+   // cv.waitKey();
 
     const dilated = canny.dilate(
         cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(4, 4)),

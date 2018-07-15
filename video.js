@@ -1,4 +1,5 @@
-console.log("starting");
+// TODO Allignment not working properly (precise) --> Projection is stretched to boarders,
+// TODO LIGHT (Rectangle brightness)
 const rs2 = require('node-librealsense/index.js');
 const cv = require('opencv4nodejs');
 const ipcRenderer = require('electron').ipcRenderer;
@@ -15,8 +16,8 @@ let maxX;
 let maxY;
 let minX;
 let minY;
-let screenHeight = 750;
-let sceenWidth = 1300;
+let screenHeight = 1080;
+let sceenWidth = 1920;
 ipcRenderer.on('started-calibrating', function (event) {
     ipcRenderer.send('log', {message: "test, started-calibrating"});
     if (!startedStreaming) {
@@ -92,8 +93,8 @@ function stream() {
                 //cv.imshow("result",result);
                 //cv.waitKey(1);
 
-                const outBase64 = cv.imencode('.jpg', result).toString('base64');
-                ipcRenderer.send('camera-data', {base64String: outBase64});
+               // const outBase64 = cv.imencode('.jpg', result).toString('base64');
+                //ipcRenderer.send('camera-data', {base64String: outBase64});
             }
         }
 
@@ -351,8 +352,8 @@ function recognizeHands(colorMat) {
 function detectSquares(mat) {
     let canny = mat.canny(100, 255, 3, false); //(200,255,3,false)
     //const canny = ca.resize(750,1300);
-    //cv.imshow("canny",canny);
-    //cv.waitKey();
+    cv.imshow("canny",canny);
+    cv.waitKey();
 
     const dilated = canny.dilate(
         cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(4, 4)),
@@ -394,14 +395,17 @@ const getCoord = (binaryImg, dstImg, minPxSize, fixedRectWidth) =>
         //console.log(x1,y1);
         //console.log(x2,y2);
         const blue = new cv.Vec(255, 0, 0);
-        dstImg.drawRectangle(
-            new cv.Point(x1, y1),
-            new cv.Point(x2, y2),
-            { color: blue, thickness: 2 }
-        );
-        if(counter <= 4) {
-            coordX.push(x1,x2);
-            coordY.push(y1,y2);
+        const size = stats.at(label, cv.CC_STAT_AREA);
+        if (minPxSize < size) {
+            dstImg.drawRectangle(
+                new cv.Point(x1, y1),
+                new cv.Point(x2, y2),
+                {color: blue, thickness: 2}
+            );
+            if (counter <= 4) {
+                coordX.push(x1, x2);
+                coordY.push(y1, y2);
+            }
         }
     }
     //ipcRenderer.send('log', {message: "coordArray:"+coordArray});

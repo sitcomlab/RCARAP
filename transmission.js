@@ -5,8 +5,8 @@ var io;
 const cv = require('opencv4nodejs');
 var _socket;
 var targetRole;
-let screenHeight = 750;
-let sceenWidth = 1300;
+let screenHeight = 1080;
+let screenWidth = 1920;
 
 
 const ipcRenderer = require('electron').ipcRenderer;

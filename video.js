@@ -2,6 +2,7 @@
 // TODO LIGHT (Rectangle brightness)
 const rs2 = require('node-librealsense/index.js');
 const cv = require('opencv4nodejs');
+const fs = require('fs');
 const ipcRenderer = require('electron').ipcRenderer;
 //distance in depth image in different colors
 const colorizer = new rs2.Colorizer();
@@ -17,7 +18,7 @@ let maxY;
 let minX;
 let minY;
 let screenHeight = 1080;
-let sceenWidth = 1920;
+let screenWidth = 1920;
 ipcRenderer.on('started-calibrating', function (event) {
     ipcRenderer.send('log', {message: "test, started-calibrating"});
     if (!startedStreaming) {
@@ -74,7 +75,7 @@ function stream() {
             if (!calibrated && !temp) {
                 temp = true;
                 const calibrationColorMat = new cv.Mat(colorFrame.data, colorFrame.height, colorFrame.width, cv.CV_8UC3);
-                //ipcRenderer.send('log', {message: "height: " + colorFrame.height + "  width: "+colorFrame.width});
+                ipcRenderer.send('log', {message: "height: " + colorFrame.height + "  width: "+colorFrame.width});
                 colorDetection(calibrationColorMat);
                 calibrated = true;
                 //Resize colormat
@@ -88,12 +89,12 @@ function stream() {
 
                 //cv.waitKey(1);
 
-                //let resultC = recognizeHands(croppedIMG);
                 let result = croppedIMG.resize(screenHeight,screenWidth);
-                //cv.imshow("result",result);
-                //cv.waitKey(1);
+                let result2 = recognizeHands(result);
+                if(result2) cv.imshow("result",result2);
+                cv.waitKey(1);
 
-               // const outBase64 = cv.imencode('.jpg', result).toString('base64');
+                //const outBase64 = cv.imencode('.jpg', result).toString('base64');
                 //ipcRenderer.send('camera-data', {base64String: outBase64});
             }
         }
@@ -164,7 +165,14 @@ function recognizeHands(colorMat) {
         const method = cv.CHAIN_APPROX_SIMPLE;
         const contours = handMask.findContours(mode, method);
         // largest contour
-        return contours.sort((c0, c1) => c1.area - c0.area)[0];
+        let handContours = [];
+        //count up if there are more hands
+        contours.sort((c0, c1) => c1.area - c0.area);
+        for(var hands=0;hands<contours.length;hands++){
+                handContours.push(contours[hands]);
+        }
+        //return contours.sort((c0, c1) => c1.area - c0.area)[0];
+        return handContours;
     };
 
 // returns distance of two points
@@ -179,6 +187,7 @@ function recognizeHands(colorMat) {
 // get the polygon from a contours hull such that there
 // will be only a single hull point for a local neighborhood
     const getRoughHull = (contour, maxDist) => {
+        try{
         // get hull indices and hull points
         const hullIndices = contour.convexHullIndices();
         const contourPoints = contour.getPoints();
@@ -211,7 +220,12 @@ function recognizeHands(colorMat) {
         };
         const pointGroups = Array.from(pointsByLabel.values());
         // return contour indeces of most central points
-        return pointGroups.map(getMostCentralPoint).map(ptWithIdx => ptWithIdx.contourIdx);
+            return pointGroups.map(getMostCentralPoint).map(ptWithIdx => ptWithIdx.contourIdx);
+    }
+    catch (e){
+        ipcRenderer.send('log', {message: "try catch event: " + e});
+        return [];
+    }
     };
 
     const getHullDefectVertices = (handContour, hullIndices) => {
@@ -268,92 +282,99 @@ function recognizeHands(colorMat) {
     if (!handContour) {
         return;
     }
-
     const maxPointDist = 25;
-    const hullIndices = getRoughHull(handContour, maxPointDist);
+    const maxAngleDeg = 60;
+    let result = resizedImg.copy();
+
+    for(var i=0;i<handContour.length;i++) {
+        let hullIndices = getRoughHull(handContour[i], maxPointDist);
 
 // get defect points of hull to contour and return vertices
 // of each hull point to its defect points
-    const vertices = getHullDefectVertices(handContour, hullIndices);
+        let vertices = getHullDefectVertices(handContour[i], hullIndices);
 
 // fingertip points are those which have a sharp angle to its defect points
-    const maxAngleDeg = 60;
-    const verticesWithValidAngle = filterVerticesByAngle(vertices, maxAngleDeg);
+        let verticesWithValidAngle = filterVerticesByAngle(vertices, maxAngleDeg);
 
-    const result = resizedImg.copy();
+
 // draw bounding box and center line
-    resizedImg.drawContours(
-        [handContour],
-        blue, {
-            thickness: 2
-        }
-    );
+//     resizedImg.drawContours(
+//         [handContour],
+//         blue, {
+//             thickness: 2
+//         }
+//     );
 
 // draw points and vertices
-    verticesWithValidAngle.forEach((v) => {
-        resizedImg.drawLine(
-        v.pt,
-        v.d1, {
-            color: green,
-            thickness: 2
-        }
-    );
-    resizedImg.drawLine(
-        v.pt,
-        v.d2, {
-            color: green,
-            thickness: 2
-        }
-    );
-    resizedImg.drawEllipse(
-        new cv.RotatedRect(v.pt, new cv.Size(20, 20), 0), {
-            color: red,
-            thickness: 2
-        }
-    );
-    result.drawEllipse(
-        new cv.RotatedRect(v.pt, new cv.Size(20, 20), 0), {
-            color: red,
-            thickness: 2
-        }
-    );
-});
+        verticesWithValidAngle.forEach((v) => {
+            //     resizedImg.drawLine(
+            //     v.pt,
+            //     v.d1, {
+            //         color: green,
+            //         thickness: 2
+            //     }
+            // );
+            // resizedImg.drawLine(
+            //     v.pt,
+            //     v.d2, {
+            //         color: green,
+            //         thickness: 2
+            //     }
+            // );
+            // resizedImg.drawEllipse(
+            //     new cv.RotatedRect(v.pt, new cv.Size(20, 20), 0), {
+            //         color: red,
+            //         thickness: 2
+            //     }
+            // );
+            ipcRenderer.send('log', {message: "x coordinates: " + v.pt.x + "y coordinates: " + v.pt.y});
+            /*fs.writeFile('handCoordinates.txt', "x coordinates: " + v.pt.x + " y coordinates: " + v.pt.y, function(err){
+                if(err) throw err;
+            });*/
+            result.drawEllipse(
+            new cv.RotatedRect(v.pt, new cv.Size(20, 20), 0), {
+                color: red,
+                thickness: 2
+            }
+        );
+    });
 
 
 // display detection result
-    const numFingersUp = verticesWithValidAngle.length;
-    result.drawRectangle(
-        new cv.Point(10, 10),
-        new cv.Point(70, 70), {
-            color: green,
-            thickness: 2
-        }
-    );
-
-    const fontScale = 2;
-    result.putText(
-        String(numFingersUp),
-        new cv.Point(20, 60),
-        cv.FONT_ITALIC,
-        fontScale, {
-            color: green,
-            thickness: 2
-        }
-    );
-
-    const {
-        rows,
-        cols
-    } = result;
-
+//     const numFingersUp = verticesWithValidAngle.length;
+//     result.drawRectangle(
+//         new cv.Point(10, 10),
+//         new cv.Point(70, 70), {
+//             color: green,
+//             thickness: 2
+//         }
+//     );
+//
+//     const fontScale = 2;
+//     result.putText(
+//         String(numFingersUp),
+//         new cv.Point(20, 60),
+//         cv.FONT_ITALIC,
+//         fontScale, {
+//             color: green,
+//             thickness: 2
+//         }
+//     );
+//
+//     const {
+//         rows,
+//         cols
+//     } = result;
+        //resultArray.push(result);
+    }
     return result;
 }
 
 function detectSquares(mat) {
     let canny = mat.canny(100, 255, 3, false); //(200,255,3,false)
     //const canny = ca.resize(750,1300);
-   // cv.imshow("canny",canny);
-   // cv.waitKey();
+    //cv.imshow("canny",canny);
+    //cv.waitKey();
 
     const dilated = canny.dilate(
         cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(4, 4)),
@@ -390,13 +411,13 @@ const getCoord = (binaryImg, dstImg, minPxSize, fixedRectWidth) =>
             x1 + (fixedRectWidth || stats.at(label, cv.CC_STAT_WIDTH)),
             y1 + (fixedRectWidth || stats.at(label, cv.CC_STAT_HEIGHT))
         ];
-        counter++;
         ipcRenderer.send('log', {message: "counter: " + counter});
         //console.log(x1,y1);
         //console.log(x2,y2);
         const blue = new cv.Vec(255, 0, 0);
         const size = stats.at(label, cv.CC_STAT_AREA);
         if (minPxSize < size) {
+            counter++;
             dstImg.drawRectangle(
                 new cv.Point(x1, y1),
                 new cv.Point(x2, y2),
@@ -413,6 +434,10 @@ const getCoord = (binaryImg, dstImg, minPxSize, fixedRectWidth) =>
     maxY = Math.max(...coordY);
     minX = Math.min(...coordX);
     minY = Math.min(...coordY);
+    // maxX += 20; Buffer from transmission
+    // maxY += 20;
+    // minX -= 20;
+    // minY -= 20;
     ipcRenderer.send('log', {message: "coordX:"+coordX});
     ipcRenderer.send('log', {message: "coordY:"+coordY});
     ipcRenderer.send('log', {message: "minX:"+minX+" maxX: "+maxX});
@@ -440,8 +465,4 @@ function colorDetection(mat){
     //cv.imshow('jfjfv', testMat);
     //cv.waitKey(1);
     detectSquares(testMat);
-}
-
-function resizeStream(){
-
 }

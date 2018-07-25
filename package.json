@@ -21,6 +21,7 @@
     "electron-rebuild": "^1.7.3",
     "electron-remote": "^1.2.0",
     "express": "^4.16.3",
+    "fs": "0.0.1-security",
     "node-glfw-3": "^0.3.3",
     "node-librealsense": "^0.2103.0",
     "opencv4nodejs": "^4.5.0",

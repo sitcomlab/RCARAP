@@ -9,7 +9,7 @@ const colorizer = new rs2.Colorizer();
 const pipeline = new rs2.Pipeline();
 const align = new rs2.Align(rs2.stream.STREAM_COLOR);
 var isPrinted = false;
-let initalClippingDist = 1.10;
+let initalClippingDist = 1.15;
 let calibrated = false;
 let startedStreaming = false;
 let gotCoordinates = false;
@@ -289,7 +289,7 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
 // main
     const delay = 20;
     //const resizedImg = colorMat.resizeToMax(1280);
-    const resizedImg = colorMat.resize(1080,1920);
+    const resizedImg = colorMat.resize(screenHeight,screenWidth);
 
 //            while(true){
     const handMask = makeHandMask(resizedImg);
@@ -344,10 +344,10 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
             //     }
             // );
             //let depthData = depthFrame.getData();
-            ipcRenderer.send('log', {message: "x coordinates: " + v.pt.x + "y coordinates: " + v.pt.y});
+           // ipcRenderer.send('log', {message: "x coordinates: " + v.pt.x + "y coordinates: " + v.pt.y});
             let depthValue = depthFrame.at(v.pt.y, v.pt.x);
             let pixelDistance = depthScale * depthValue;
-            let pixelDistToTable = initalClippingDist - pixelDistance;
+            let pixelDistToTable = (initalClippingDist - pixelDistance).toFixed(2);
             fs.appendFileSync('handCoordinates.txt',"x coordinate: " + v.pt.x + " y coordinate: " + v.pt.y + " Distance to table: " + pixelDistToTable +  "\n",function (err) {
                 if (err) throw err;
             });
@@ -360,9 +360,9 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
 
             result.putText(
                 String(pixelDistToTable),
-                new cv.Point(v.pt.y,v.pt.x),
+                new cv.Point(v.pt.x + 5,v.pt.y),
                 cv.FONT_ITALIC,
-                2, {
+                0.5, {
                 color: red,
                 thickness: 2
                 }

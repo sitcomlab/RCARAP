@@ -25,6 +25,14 @@ ipcRenderer.on('started-calibrating', function (event) {
             stream();
     }
 });
+
+fs.stat('handCoordinates.txt', function(err, stat) {
+    if(err == null) {
+        fs.unlink('handCoordinates.txt', function (err) {
+            if (err) throw err;
+        });
+    }
+});
 //console.log('Press Up/Down to change the depth clipping distance.');
 /*console.log(this);
  this.window.setKeyCallback((key, scancode, action, modes) => {
@@ -340,9 +348,9 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
             let depthValue = depthFrame.at(v.pt.y, v.pt.x);
             let test2 = depthScale * depthValue;
             ipcRenderer.send('log', {message: "depth Information :" + test2});
-            /*fs.appendFile('handCoordinates.txt', "x coordinates: 100, 200, y coordinates: 1000, 2000", function(err){
-                if(err) throw err;
-            });*/
+            fs.appendFileSync('handCoordinates.txt',"x coordinate: " + v.pt.x + " y coordinate: " + v.pt.y + "\n",function (err) {
+                if (err) throw err;
+            });
             result.drawEllipse(
             new cv.RotatedRect(v.pt, new cv.Size(20, 20), 0), {
                 color: red,

@@ -346,9 +346,9 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
             //let depthData = depthFrame.getData();
             ipcRenderer.send('log', {message: "x coordinates: " + v.pt.x + "y coordinates: " + v.pt.y});
             let depthValue = depthFrame.at(v.pt.y, v.pt.x);
-            let test2 = depthScale * depthValue;
-            ipcRenderer.send('log', {message: "depth Information :" + test2});
-            fs.appendFileSync('handCoordinates.txt',"x coordinate: " + v.pt.x + " y coordinate: " + v.pt.y + "\n",function (err) {
+            let pixelDistance = depthScale * depthValue;
+            let pixelDistToTable = initalClippingDist - pixelDistance;
+            fs.appendFileSync('handCoordinates.txt',"x coordinate: " + v.pt.x + " y coordinate: " + v.pt.y + " Distance to table: " + pixelDistToTable +  "\n",function (err) {
                 if (err) throw err;
             });
             result.drawEllipse(
@@ -356,8 +356,18 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
                 color: red,
                 thickness: 2
             }
-        );
-    });
+            );
+
+            result.putText(
+                String(pixelDistToTable),
+                new cv.Point(v.pt.y,v.pt.x),
+                cv.FONT_ITALIC,
+                2, {
+                color: red,
+                thickness: 2
+                }
+            );
+        });
 
 
 // display detection result

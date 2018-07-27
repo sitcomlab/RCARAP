@@ -348,6 +348,7 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
             let depthValue = depthFrame.at(v.pt.y, v.pt.x);
             let pixelDistance = depthScale * depthValue;
             let pixelDistToTable = (initalClippingDist - pixelDistance).toFixed(2);
+            // TODO use fs.createWriteStream or move it to different process
             fs.appendFileSync('handCoordinates.txt',"x coordinate: " + v.pt.x + " y coordinate: " + v.pt.y + " Distance to table: " + pixelDistToTable +  "\n",function (err) {
                 if (err) throw err;
             });
@@ -360,7 +361,7 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
 
             result.putText(
                 String(pixelDistToTable),
-                new cv.Point(v.pt.x + 5,v.pt.y),
+                new cv.Point(v.pt.x + 25,v.pt.y),
                 cv.FONT_ITALIC,
                 0.5, {
                 color: red,

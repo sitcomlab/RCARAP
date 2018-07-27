@@ -9,7 +9,7 @@ const colorizer = new rs2.Colorizer();
 const pipeline = new rs2.Pipeline();
 const align = new rs2.Align(rs2.stream.STREAM_COLOR);
 var isPrinted = false;
-let initalClippingDist = 1;
+let initalClippingDist = 1.10;
 let calibrated = false;
 let startedStreaming = false;
 let gotCoordinates = false;
@@ -90,12 +90,20 @@ function stream() {
                 //cv.waitKey(1);
 
                 let result = croppedIMG.resize(screenHeight,screenWidth);
-                let result2 = recognizeHands(result);
-                if(result2) cv.imshow("result",result2);
-                cv.waitKey(1);
+                const depthMat = new cv.Mat(depthFrame.data, depthFrame.height, depthFrame.width, cv.CV_16SC1);
+                let croppedDepthFrame = depthMat.getRegion(new cv.Rect(minX, minY, maxX-minX, maxY-minY));
+                let resizedDepthFrame = croppedDepthFrame.resize(screenHeight, screenWidth);
+                //ipcRenderer.send('log', {message: "color Mat: "+ result.cols +" "+ result.rows});
+                //ipcRenderer.send('log', {message: "depth Mat: "+ resizedDepthFrame.cols +" "+ resizedDepthFrame.rows});
+                //let resizedDepthFrame2 = resizedDepthFrame.convertTo(cv.CV_8UC3);
+                let result2 = recognizeHands(result, resizedDepthFrame, depthScale);
+                //cv.imshow("depthFrame",resizedDepthFrame2);
+                //cv.waitKey(1);
 
-                //const outBase64 = cv.imencode('.jpg', result).toString('base64');
-                //ipcRenderer.send('camera-data', {base64String: outBase64});
+                if(result2) {
+                    const outBase64 = cv.imencode('.jpg', result2).toString('base64');
+                    ipcRenderer.send('camera-data', {base64String: outBase64});
+                }
             }
         }
 
@@ -144,7 +152,7 @@ function removeBackground(otherFrame, depthFrame, depthScale) {
     isPrinted = true;
 }
 
-function recognizeHands(colorMat) {
+function recognizeHands(colorMat, depthFrame, depthScale) {
 // segmenting by skin color (has to be adjusted)
     const skinColorUpper = hue => new cv.Vec(hue, 0.8 * 255, 0.6 * 255);
     const skinColorLower = hue => new cv.Vec(hue, 0.1 * 255, 0.05 * 255);
@@ -223,7 +231,7 @@ function recognizeHands(colorMat) {
             return pointGroups.map(getMostCentralPoint).map(ptWithIdx => ptWithIdx.contourIdx);
     }
     catch (e){
-        ipcRenderer.send('log', {message: "try catch event: " + e});
+        //ipcRenderer.send('log', {message: "try catch event: " + e});
         return [];
     }
     };
@@ -327,8 +335,12 @@ function recognizeHands(colorMat) {
             //         thickness: 2
             //     }
             // );
+            //let depthData = depthFrame.getData();
             ipcRenderer.send('log', {message: "x coordinates: " + v.pt.x + "y coordinates: " + v.pt.y});
-            /*fs.writeFile('handCoordinates.txt', "x coordinates: " + v.pt.x + " y coordinates: " + v.pt.y, function(err){
+            let depthValue = depthFrame.at(v.pt.y, v.pt.x);
+            let test2 = depthScale * depthValue;
+            ipcRenderer.send('log', {message: "depth Information :" + test2});
+            /*fs.appendFile('handCoordinates.txt', "x coordinates: 100, 200, y coordinates: 1000, 2000", function(err){
                 if(err) throw err;
             });*/
             result.drawEllipse(

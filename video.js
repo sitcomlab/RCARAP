@@ -8,8 +8,11 @@ const ipcRenderer = require('electron').ipcRenderer;
 const colorizer = new rs2.Colorizer();
 const pipeline = new rs2.Pipeline();
 const align = new rs2.Align(rs2.stream.STREAM_COLOR);
+const DFilter = new rs2.DecimationFilter();
+const SFilter = new rs2.SpatialFilter();
+const TFilter = new rs2.TemporalFilter();
 var isPrinted = false;
-let initalClippingDist = 1.15;
+let initalClippingDist = 1.05;
 let calibrated = false;
 let startedStreaming = false;
 let gotCoordinates = false;
@@ -19,8 +22,8 @@ let minX;
 let minY;
 let screenHeight = 1080;
 let screenWidth = 1920;
-let coordinateLog = "";
-let logCounter = 0;
+//let coordinateLog = "";
+//let logCounter = 0;
 ipcRenderer.on('started-calibrating', function (event) {
     ipcRenderer.send('log', {message: "test, started-calibrating"});
     if (!startedStreaming) {
@@ -79,7 +82,12 @@ function stream() {
         //ipcRenderer.send('log', {message: "rawheight: " + rawFrameset.colorFrame.height + "  rawwidth: "+rawFrameset.colorFrame.width});
         const alignedFrameset = align.process(rawFrameset);
         let colorFrame = alignedFrameset.colorFrame;
+        // let depthFrame = alignedFrameset.depthFrame;
         let depthFrame = alignedFrameset.depthFrame;
+        //TODO Filters
+       // depthFrame = DFilter.process(depthFrame);
+       // depthFrame = SFilter.process(depthFrame);
+       // depthFrame = TFilter.process(depthFrame);
         //ipcRenderer.send('log', {message: "temp: " + temp + "  cli: "+calibrated});
         if (colorFrame && depthFrame) {
             if (!calibrated && !temp) {
@@ -100,7 +108,9 @@ function stream() {
                 //cv.waitKey(1);
 
                 let result = croppedIMG.resize(screenHeight,screenWidth);
-                const depthMat = new cv.Mat(depthFrame.data, depthFrame.height, depthFrame.width, cv.CV_16SC1);
+                let depthMat = new cv.Mat(depthFrame.data, depthFrame.height, depthFrame.width, cv.CV_16SC1);
+                //cv.imshow("Filter", depthMat);
+                //cv.waitKey(1);
                 let croppedDepthFrame = depthMat.getRegion(new cv.Rect(minX, minY, maxX-minX, maxY-minY));
                 let resizedDepthFrame = croppedDepthFrame.resize(screenHeight, screenWidth);
                 //ipcRenderer.send('log', {message: "color Mat: "+ result.cols +" "+ result.rows});
@@ -352,13 +362,18 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
             let pixelDistance = depthScale * depthValue;
             let pixelDistToTable = (initalClippingDist - pixelDistance).toFixed(2);
             // TODO use fs.createWriteStream or move it to different process
-            coordinateLog += "x coordinate: " + v.pt.x + ", y coordinate: " + v.pt.y + ", Distance to table: " + pixelDistToTable + "\n";
-            if(logCounter %100 == 0){
+           /** coordinateLog += "x coordinate: " + v.pt.x + ", y coordinate: " + v.pt.y + ", Distance to table: " + pixelDistToTable + "\n";
+            if(logCounter %200 == 0){
                 fs.appendFileSync('handCoordinates.txt',coordinateLog,function (err) {
                     if (err) throw err;
                 });
+                logCounter = 200;
                 coordinateLog = "";
             }
+            **/
+           fs.appendFileSync('handCoordinates.txt',"x coordinate: " + v.pt.x + " y coordinate: " + v.pt.y + " Distance to table: " + pixelDistToTable +  "\n",function (err) {
+               if (err) throw err;
+           });
             result.drawEllipse(
             new cv.RotatedRect(v.pt, new cv.Size(20, 20), 0), {
                 color: red,

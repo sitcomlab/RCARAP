@@ -19,6 +19,8 @@ let minX;
 let minY;
 let screenHeight = 1080;
 let screenWidth = 1920;
+let coordinateLog = "";
+let logCounter = 0;
 ipcRenderer.on('started-calibrating', function (event) {
     ipcRenderer.send('log', {message: "test, started-calibrating"});
     if (!startedStreaming) {
@@ -107,6 +109,7 @@ function stream() {
                 let result2 = recognizeHands(result, resizedDepthFrame, depthScale);
                 //cv.imshow("depthFrame",resizedDepthFrame2);
                 //cv.waitKey(1);
+                logCounter++;
 
                 if(result2) {
                     const outBase64 = cv.imencode('.jpg', result2).toString('base64');
@@ -349,9 +352,13 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
             let pixelDistance = depthScale * depthValue;
             let pixelDistToTable = (initalClippingDist - pixelDistance).toFixed(2);
             // TODO use fs.createWriteStream or move it to different process
-            fs.appendFileSync('handCoordinates.txt',"x coordinate: " + v.pt.x + " y coordinate: " + v.pt.y + " Distance to table: " + pixelDistToTable +  "\n",function (err) {
-                if (err) throw err;
-            });
+            coordinateLog += "x coordinate: " + v.pt.x + ", y coordinate: " + v.pt.y + ", Distance to table: " + pixelDistToTable + "\n";
+            if(logCounter %100 == 0){
+                fs.appendFileSync('handCoordinates.txt',coordinateLog,function (err) {
+                    if (err) throw err;
+                });
+                coordinateLog = "";
+            }
             result.drawEllipse(
             new cv.RotatedRect(v.pt, new cv.Size(20, 20), 0), {
                 color: red,

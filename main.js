@@ -5,6 +5,7 @@ const BrowserWindow = electron.BrowserWindow
 const path = require('path')
 const url = require('url')
 const ipcMain = require('electron').ipcMain;
+const util = require("util");
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -27,7 +28,7 @@ function createWindow() {
     backgroundWindow2 = new BrowserWindow({
         width: 800,
         height: 600,
-        show: true
+        show: false
     })
 
     mainWindow.loadURL(url.format({
@@ -94,4 +95,8 @@ ipcMain.on('create-write-stream', function(event,data) {
 });
 ipcMain.on('end-streaming', function(event, data) {
     backgroundWindow2.webContents.send('end-write-stream', data)
+});
+
+ipcMain.on('logObject', function(event, data) {
+    console.log(util.inspect(data.data,false,null));
 });

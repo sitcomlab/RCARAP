@@ -93,7 +93,6 @@ function createServerSesson() {
             }
         });
         ipcRenderer.on('camera-data', function(event, data) {
-                console.log("sending");
                 data.displayStream = displayStream;
                 socket.emit('clientEvent', data);
         });

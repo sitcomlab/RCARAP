@@ -11,6 +11,7 @@ const align = new rs2.Align(rs2.stream.STREAM_COLOR);
 const DFilter = new rs2.DecimationFilter();
 const SFilter = new rs2.SpatialFilter();
 const TFilter = new rs2.TemporalFilter();
+const HFilter = new rs2.HoleFillingFilter();
 var isPrinted = false;
 let initalClippingDist = 1.05;
 let calibrated = false;
@@ -81,9 +82,14 @@ function stream() {
         // let depthFrame = alignedFrameset.depthFrame;
         let depthFrame = alignedFrameset.depthFrame;
         //TODO Filters
-       // depthFrame = DFilter.process(depthFrame);
+        let filtered = HFilter.process(depthFrame);
        // depthFrame = SFilter.process(depthFrame);
        // depthFrame = TFilter.process(depthFrame);
+        ipcRenderer.send('logObject', {data: depthFrame.height});
+        let depthMat = new cv.Mat(filtered.data, filtered.height, filtered.width, cv.CV_16SC1);
+        cv.imshow("Filter", depthMat);
+        cv.waitKey(1);
+        break
         //ipcRenderer.send('log', {message: "temp: " + temp + "  cli: "+calibrated});
         if (colorFrame && depthFrame) {
             if (!calibrated && !temp) {
@@ -469,10 +475,10 @@ const getCoord = (binaryImg, dstImg, minPxSize, fixedRectWidth) =>
                 new cv.Point(x2, y2),
                 {color: blue, thickness: 2}
             );
-            if (counter <= 4) {
+            //if (counter <= 4) {
                 coordX.push(x1, x2);
                 coordY.push(y1, y2);
-            }
+           // }
         }
     }
     //ipcRenderer.send('log', {message: "coordArray:"+coordArray});

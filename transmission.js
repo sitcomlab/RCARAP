@@ -7,7 +7,7 @@ var _socket;
 var targetRole;
 let screenHeight = 1080;
 let screenWidth = 1920;
-
+let displayStream = true;
 
 const ipcRenderer = require('electron').ipcRenderer;
 
@@ -21,6 +21,10 @@ document.getElementById('joinSession').addEventListener("click", function() {
 
 document.getElementById('calibrate').addEventListener("click", function() {
     calibrate();
+});
+document.getElementById('endStreaming').addEventListener("click", function() {
+    displayStream = false;
+    ipcRenderer.send('end-streaming');
 });
 
 function joinSession() {
@@ -36,21 +40,26 @@ function joinSession() {
         _socket = socket;
         targetRole = "server";
         socket.on('clientEvent', function(data) {
-            const base64text= data.base64String;
-            const base64data = base64text.replace('data:image/jpeg;base64','');
-            const buffer = Buffer.from(base64data,'base64');
-            const base64image = cv.imdecode(buffer);
-            cv.imshow("videoStream", base64image);
-            if(data.mode && data.mode == "calibration"){
-                ipcRenderer.send('started-calibrating');
-                cv.waitKey()
+            if(data.displayStream) {
+                const base64text = data.base64String;
+                const base64data = base64text.replace('data:image/jpeg;base64', '');
+                const buffer = Buffer.from(base64data, 'base64');
+                const base64image = cv.imdecode(buffer);
+                cv.imshow("videoStream", base64image);
+                if (data.mode && data.mode == "calibration") {
+                    ipcRenderer.send('started-calibrating');
+                    cv.waitKey()
+                }
+                else {
+                    cv.waitKey(1)
+                }
             }
             else{
-                cv.waitKey(1)
+                cv.destroyAllWindows();
             }
         });
         ipcRenderer.on('camera-data', function(event, data) {
-                console.log("sending");
+                data.displayStream = displayStream;
                 socket.emit('serverEvent', data);
         });
     });
@@ -64,22 +73,28 @@ function createServerSesson() {
         _socket = socket;
         targetRole = "client";
         socket.on('serverEvent', function(data) {
-            const base64text= data.base64String;
-            const base64data = base64text.replace('data:image/jpeg;base64','')
-                                        .replace('data:image/png;base64','');
-            const buffer = Buffer.from(base64data,'base64');
-            const base64image = cv.imdecode(buffer);
-            cv.imshow("videoStream", base64image);
-            if(data.mode && data.mode == "calibration"){
-                ipcRenderer.send('started-calibrating');
-                cv.waitKey()
+            if(data.displayStream) {
+                const base64text = data.base64String;
+                const base64data = base64text.replace('data:image/jpeg;base64', '')
+                    .replace('data:image/png;base64', '');
+                const buffer = Buffer.from(base64data, 'base64');
+                const base64image = cv.imdecode(buffer);
+                cv.imshow("videoStream", base64image);
+                if (data.mode && data.mode == "calibration") {
+                    ipcRenderer.send('started-calibrating');
+                    cv.waitKey()
+                }
+                else {
+                    cv.waitKey(1)
+                }
             }
             else{
-                cv.waitKey(1)
+                cv.destroyAllWindows();
             }
         });
         ipcRenderer.on('camera-data', function(event, data) {
                 console.log("sending");
+                data.displayStream = displayStream;
                 socket.emit('clientEvent', data);
         });
     });
@@ -110,6 +125,7 @@ function calibrate() {
         let data = {base64String: outBase64, mode: "calibration"};
         let eventName = targetRole+"Event";
         console.log(eventName);
+        data.displayStream = true;
         _socket.emit(eventName, data);
     }
 }

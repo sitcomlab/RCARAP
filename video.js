@@ -22,6 +22,7 @@ let minX;
 let minY;
 let screenHeight = 1080;
 let screenWidth = 1920;
+let shouldStream = true;
 //let coordinateLog = "";
 //let logCounter = 0;
 ipcRenderer.on('started-calibrating', function (event) {
@@ -31,13 +32,8 @@ ipcRenderer.on('started-calibrating', function (event) {
     }
 });
 
-fs.stat('handCoordinates.txt', function(err, stat) {
-    if(err == null) {
-        fs.unlink('handCoordinates.txt', function (err) {
-            if (err) throw err;
-        });
-    }
-});
+ipcRenderer.send('create-write-stream', {filename: "handCoordinates.txt"});
+
 //console.log('Press Up/Down to change the depth clipping distance.');
 /*console.log(this);
  this.window.setKeyCallback((key, scancode, action, modes) => {
@@ -129,7 +125,6 @@ function stream() {
         }
 
     }
-
     pipeline.stop();
     pipeline.destroy();
     rs2.cleanup();
@@ -371,7 +366,7 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
                 coordinateLog = "";
             }
             **/
-            ipcRenderer.send('write-to-file', {filename: "handCoordinates.txt", logText: "x coordinate: " + v.pt.x + ", y coordinate: " + v.pt.y + ", Distance to table: " + pixelDistToTable + "\n"});
+            ipcRenderer.send('write-to-file', {logText: "x coordinate: " + v.pt.x + ", y coordinate: " + v.pt.y + ", Distance to table: " + pixelDistToTable + "\n"});
             result.drawEllipse(
             new cv.RotatedRect(v.pt, new cv.Size(20, 20), 0), {
                 color: red,

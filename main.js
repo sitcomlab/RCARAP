@@ -89,3 +89,9 @@ ipcMain.on('started-calibrating', function(event) {
 ipcMain.on('write-to-file', function(event,data) {
     backgroundWindow2.webContents.send('write-to-file', data)
 });
+ipcMain.on('create-write-stream', function(event,data) {
+    backgroundWindow2.webContents.send('create-write-stream', data)
+});
+ipcMain.on('end-streaming', function(event, data) {
+    backgroundWindow2.webContents.send('end-write-stream', data)
+});

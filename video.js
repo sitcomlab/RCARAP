@@ -119,7 +119,7 @@ function stream() {
                 let result2 = recognizeHands(result, resizedDepthFrame, depthScale);
                 //cv.imshow("depthFrame",resizedDepthFrame2);
                 //cv.waitKey(1);
-                logCounter++;
+                //logCounter++;
 
                 if(result2) {
                     const outBase64 = cv.imencode('.jpg', result2).toString('base64');
@@ -371,9 +371,7 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
                 coordinateLog = "";
             }
             **/
-           fs.appendFileSync('handCoordinates.txt',"x coordinate: " + v.pt.x + " y coordinate: " + v.pt.y + " Distance to table: " + pixelDistToTable +  "\n",function (err) {
-               if (err) throw err;
-           });
+            ipcRenderer.send('write-to-file', {filename: "handCoordinates.txt", logText: "x coordinate: " + v.pt.x + ", y coordinate: " + v.pt.y + ", Distance to table: " + pixelDistToTable + "\n"});
             result.drawEllipse(
             new cv.RotatedRect(v.pt, new cv.Size(20, 20), 0), {
                 color: red,

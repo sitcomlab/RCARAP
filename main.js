@@ -24,6 +24,12 @@ function createWindow() {
         show: true
     })
 
+    backgroundWindow2 = new BrowserWindow({
+        width: 800,
+        height: 600,
+        show: true
+    })
+
     mainWindow.loadURL(url.format({
         pathname: path.join(__dirname, 'index.html'),
         protocol: 'file:',
@@ -35,11 +41,20 @@ function createWindow() {
         slashes: true
     }))
 
+    backgroundWindow2.loadURL(url.format({
+        pathname: path.join(__dirname, 'background2.html'),
+        protocol: 'file:',
+        slashes: true
+    }))
+
     mainWindow.on('closed', function() {
         mainWindow = null
     })
     backgroundWindow.on('closed', function() {
         backgroundWindow = null
+    })
+    backgroundWindow2.on('closed', function() {
+        backgroundWindow2 = null
     })
 }
 
@@ -69,4 +84,8 @@ ipcMain.on('log', function(event, data) {
 });
 ipcMain.on('started-calibrating', function(event) {
     backgroundWindow.webContents.send('started-calibrating')
+});
+
+ipcMain.on('write-to-file', function(event,data) {
+    backgroundWindow2.webContents.send('write-to-file', data)
 });

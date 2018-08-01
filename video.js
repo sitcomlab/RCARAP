@@ -25,7 +25,7 @@ let screenHeight = 1080;
 let screenWidth = 1920;
 let shouldStream = true;
 //let coordinateLog = "";
-//let logCounter = 0;
+let logCounter = 0;
 ipcRenderer.on('started-calibrating', function (event) {
     ipcRenderer.send('log', {message: "test, started-calibrating"});
     if (!startedStreaming) {
@@ -92,12 +92,12 @@ function stream() {
                 //Resize colormat
 
             } else {
-                let filtered = DFilter.process(depthFrame);
-                //let filtered = SFilter.process(depthFrame);
-                filtered = TFilter.process(depthFrame);
-                //let filtered = HFilter.process(depthFrame);
+                //let filtered = DFilter.process(depthFrame);
+                //filtered = SFilter.process(depthFrame);
+                //filtered = TFilter.process(depthFrame);
+                //filtered = HFilter.process(depthFrame);
                 //ipcRenderer.send('log', {message: "test"});
-                removeBackground(colorFrame, filtered, depthScale);
+                removeBackground(colorFrame, depthFrame, depthScale);
                 const colorMat = new cv.Mat(colorFrame.data, colorFrame.height, colorFrame.width, cv.CV_8UC3);
                 let croppedIMG = colorMat.getRegion(new cv.Rect(minX, minY, maxX-minX, maxY-minY));
                 //cv.imshow("crop",croppedIMG);
@@ -105,7 +105,7 @@ function stream() {
                 //cv.waitKey(1);
 
                 let result = croppedIMG.resize(screenHeight,screenWidth);
-                let depthMat = new cv.Mat(filtered.data, filtered.height, filtered.width, cv.CV_16SC1);
+                let depthMat = new cv.Mat(depthFrame.data, depthFrame.height, depthFrame.width, cv.CV_16SC1);
                 //cv.imshow("Filter", depthMat);
                 //cv.waitKey(1);
                 let croppedDepthFrame = depthMat.getRegion(new cv.Rect(minX, minY, maxX-minX, maxY-minY));
@@ -116,7 +116,7 @@ function stream() {
                 let result2 = recognizeHands(result, resizedDepthFrame, depthScale);
                 //cv.imshow("depthFrame",resizedDepthFrame2);
                 //cv.waitKey(1);
-                //logCounter++;
+                logCounter++;
 
                 if(result2) {
                     const outBase64 = cv.imencode('.jpg', result2).toString('base64');
@@ -367,7 +367,9 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
                 coordinateLog = "";
             }
             **/
-            ipcRenderer.send('write-to-file', {logText: "x coordinate: " + v.pt.x + ", y coordinate: " + v.pt.y + ", Distance to table: " + pixelDistToTable + "\n"});
+           if(logCounter %100 == 0){
+               ipcRenderer.send('write-to-file', {logText: "x coordinate: " + v.pt.x + ", y coordinate: " + v.pt.y + ", Distance to table: " + pixelDistToTable + "\n"});
+           }
             result.drawEllipse(
             new cv.RotatedRect(v.pt, new cv.Size(20, 20), 0), {
                 color: red,

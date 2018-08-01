@@ -5,15 +5,15 @@ const cv = require('opencv4nodejs');
 const fs = require('fs');
 const ipcRenderer = require('electron').ipcRenderer;
 //distance in depth image in different colors
-const colorizer = new rs2.Colorizer();
 const pipeline = new rs2.Pipeline();
+const colorizer = new rs2.Colorizer();
 const align = new rs2.Align(rs2.stream.STREAM_COLOR);
 const DFilter = new rs2.DecimationFilter();
 const SFilter = new rs2.SpatialFilter();
 const TFilter = new rs2.TemporalFilter();
 const HFilter = new rs2.HoleFillingFilter();
 var isPrinted = false;
-let initalClippingDist = 1.05;
+let initalClippingDist = 1.15;
 let calibrated = false;
 let startedStreaming = false;
 let gotCoordinates = false;
@@ -81,15 +81,6 @@ function stream() {
         let colorFrame = alignedFrameset.colorFrame;
         // let depthFrame = alignedFrameset.depthFrame;
         let depthFrame = alignedFrameset.depthFrame;
-        //TODO Filters
-        let filtered = HFilter.process(depthFrame);
-       // depthFrame = SFilter.process(depthFrame);
-       // depthFrame = TFilter.process(depthFrame);
-        ipcRenderer.send('logObject', {data: depthFrame.height});
-        let depthMat = new cv.Mat(filtered.data, filtered.height, filtered.width, cv.CV_16SC1);
-        cv.imshow("Filter", depthMat);
-        cv.waitKey(1);
-        break
         //ipcRenderer.send('log', {message: "temp: " + temp + "  cli: "+calibrated});
         if (colorFrame && depthFrame) {
             if (!calibrated && !temp) {
@@ -101,8 +92,12 @@ function stream() {
                 //Resize colormat
 
             } else {
+                let filtered = DFilter.process(depthFrame);
+                //let filtered = SFilter.process(depthFrame);
+                filtered = TFilter.process(depthFrame);
+                //let filtered = HFilter.process(depthFrame);
                 //ipcRenderer.send('log', {message: "test"});
-                removeBackground(colorFrame, depthFrame, depthScale);
+                removeBackground(colorFrame, filtered, depthScale);
                 const colorMat = new cv.Mat(colorFrame.data, colorFrame.height, colorFrame.width, cv.CV_8UC3);
                 let croppedIMG = colorMat.getRegion(new cv.Rect(minX, minY, maxX-minX, maxY-minY));
                 //cv.imshow("crop",croppedIMG);
@@ -110,7 +105,7 @@ function stream() {
                 //cv.waitKey(1);
 
                 let result = croppedIMG.resize(screenHeight,screenWidth);
-                let depthMat = new cv.Mat(depthFrame.data, depthFrame.height, depthFrame.width, cv.CV_16SC1);
+                let depthMat = new cv.Mat(filtered.data, filtered.height, filtered.width, cv.CV_16SC1);
                 //cv.imshow("Filter", depthMat);
                 //cv.waitKey(1);
                 let croppedDepthFrame = depthMat.getRegion(new cv.Rect(minX, minY, maxX-minX, maxY-minY));

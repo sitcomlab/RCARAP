@@ -26,10 +26,7 @@ let screenWidth = 1920;
 let shouldStream = true;
 //let coordinateLog = "";
 let logCounter = 0;
-var io = require('socket.io-client');
-let socket = io.connect("http://localhost:8000/", {
-    reconnection: true
-});
+let logging = false;
 ipcRenderer.on('started-calibrating', function (event) {
     ipcRenderer.send('log', {message: "test, started-calibrating"});
     if (!startedStreaming) {
@@ -101,7 +98,7 @@ function stream() {
                 //filtered = TFilter.process(depthFrame);
                 //filtered = HFilter.process(depthFrame);
                 //ipcRenderer.send('log', {message: "test"});
-                removeBackground(colorFrame, depthFrame, depthScale);
+                //removeBackground(colorFrame, depthFrame, depthScale);
                 const colorMat = new cv.Mat(colorFrame.data, colorFrame.height, colorFrame.width, cv.CV_8UC3);
                 let croppedIMG = colorMat.getRegion(new cv.Rect(minX, minY, maxX-minX, maxY-minY));
                 //cv.imshow("crop",croppedIMG);
@@ -110,8 +107,8 @@ function stream() {
 
                 let result = croppedIMG.resize(screenHeight,screenWidth);
                 let depthMat = new cv.Mat(depthFrame.data, depthFrame.height, depthFrame.width, cv.CV_16SC1);
-                //cv.imshow("Filter", depthMat);
-                //cv.waitKey(1);
+                cv.imshow("cropped image", result);
+                cv.waitKey(1);
                 let croppedDepthFrame = depthMat.getRegion(new cv.Rect(minX, minY, maxX-minX, maxY-minY));
                 let resizedDepthFrame = croppedDepthFrame.resize(screenHeight, screenWidth);
                 //ipcRenderer.send('log', {message: "color Mat: "+ result.cols +" "+ result.rows});
@@ -182,11 +179,13 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
     const makeHandMask = (img) => {
         // filter by skin color
         const imgHLS = img.cvtColor(cv.COLOR_RGB2HLS);
-        const rangeMask = imgHLS.inRange(skinColorLower(5), skinColorUpper(80));
+        const rangeMask = imgHLS.inRange(skinColorLower(0), skinColorUpper(50));
 
         // remove noise
-        const blurred = rangeMask.blur(new cv.Size(10, 10));
+        const blurred = rangeMask.blur(new cv.Size(5, 5));
         const thresholded = blurred.threshold(200, 255, cv.THRESH_BINARY);
+        cv.imshow('handmask', thresholded);
+        cv.waitKey(1);
         return thresholded;
     };
 
@@ -359,9 +358,9 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
             // );
             //let depthData = depthFrame.getData();
            // ipcRenderer.send('log', {message: "x coordinates: " + v.pt.x + "y coordinates: " + v.pt.y});
-            let depthValue = depthFrame.at(v.pt.y, v.pt.x);
-            let pixelDistance = depthScale * depthValue;
-            let pixelDistToTable = (initalClippingDist - pixelDistance).toFixed(2);
+            //let depthValue = depthFrame.at(v.pt.y, v.pt.x);
+            //let pixelDistance = depthScale * depthValue;
+            //let pixelDistToTable = (initalClippingDist - pixelDistance).toFixed(2);
             // TODO use fs.createWriteStream or move it to different process
            /** coordinateLog += "x coordinate: " + v.pt.x + ", y coordinate: " + v.pt.y + ", Distance to table: " + pixelDistToTable + "\n";
             if(logCounter %200 == 0){
@@ -372,10 +371,8 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
                 coordinateLog = "";
             }
             **/
-           if(logCounter %100 == 0){
-               //ipcRenderer.send('write-to-file', {logText: "x coordinate: " + v.pt.x + ", y coordinate: " + v.pt.y + ", Distance to table: " + pixelDistToTable + " Time: " + new Date().toUTCString() + "\n"});
-               let coords = "x coordinate: " + v.pt.x + ", y coordinate: " + v.pt.y + ", Distance to table: " + pixelDistToTable + " Time: " + new Date().toUTCString() + "\n";
-               socket.emit('logCoords', coords);
+           /*if(logCounter %30 == 0 && logging == true){
+               ipcRenderer.send('write-to-file', {logText: "x coordinate: " + v.pt.x + ", y coordinate: " + v.pt.y + ", Distance to table: " + pixelDistToTable + " Time: " + new Date().toUTCString() + "\n"});
            }
             result.drawEllipse(
             new cv.RotatedRect(v.pt, new cv.Size(20, 20), 0), {
@@ -392,7 +389,7 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
                 color: blue,
                 thickness: 2
                 }
-            );
+            );*/
         });
 
 

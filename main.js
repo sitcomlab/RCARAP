@@ -7,14 +7,6 @@ const url = require('url')
 const ipcMain = require('electron').ipcMain;
 const util = require("util");
 
-var io = require('socket.io').listen(8000);
-io.on('connection', function(socket) {
-    console.log('connected:', socket.client.id);
-    socket.on('logCoords', function(data) {
-        backgroundWindow2.webContents.send('write-to-file', data);
-    });
-});
-
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow;

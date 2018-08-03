@@ -13,7 +13,7 @@ const SFilter = new rs2.SpatialFilter();
 const TFilter = new rs2.TemporalFilter();
 const HFilter = new rs2.HoleFillingFilter();
 var isPrinted = false;
-let initalClippingDist = 1.15;
+let initalClippingDist = 1.21;
 let calibrated = false;
 let startedStreaming = false;
 let gotCoordinates = false;
@@ -107,8 +107,6 @@ function stream() {
 
                 let result = croppedIMG.resize(screenHeight,screenWidth);
                 let depthMat = new cv.Mat(depthFrame.data, depthFrame.height, depthFrame.width, cv.CV_16SC1);
-                cv.imshow("cropped image", result);
-                cv.waitKey(1);
                 let croppedDepthFrame = depthMat.getRegion(new cv.Rect(minX, minY, maxX-minX, maxY-minY));
                 let resizedDepthFrame = croppedDepthFrame.resize(screenHeight, screenWidth);
                 //ipcRenderer.send('log', {message: "color Mat: "+ result.cols +" "+ result.rows});
@@ -184,8 +182,6 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
         // remove noise
         const blurred = rangeMask.blur(new cv.Size(5, 5));
         const thresholded = blurred.threshold(200, 255, cv.THRESH_BINARY);
-        cv.imshow('handmask', thresholded);
-        cv.waitKey(1);
         return thresholded;
     };
 
@@ -298,6 +294,11 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
     const blue = new cv.Vec(255, 0, 0);
     const green = new cv.Vec(0, 255, 0);
     const red = new cv.Vec(0, 0, 255);
+    const col1 = new cv.Vec(255,255,178);
+    const col2 = new cv.Vec(254,204,92);
+    const col3 = new cv.Vec(253,141,60);
+    const col4 = new cv.Vec(240,59,32);
+    const col5 = new cv.Vec(189,0,38);
 
 // main
     const delay = 20;
@@ -313,7 +314,7 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
     }
     const maxPointDist = 25;
     const maxAngleDeg = 60;
-    let result = resizedImg.copy();
+    let result = resizedImg.copy(handMask);
 
     for(var i=0;i<handContour.length;i++) {
         let hullIndices = getRoughHull(handContour[i], maxPointDist);
@@ -358,9 +359,9 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
             // );
             //let depthData = depthFrame.getData();
            // ipcRenderer.send('log', {message: "x coordinates: " + v.pt.x + "y coordinates: " + v.pt.y});
-            //let depthValue = depthFrame.at(v.pt.y, v.pt.x);
-            //let pixelDistance = depthScale * depthValue;
-            //let pixelDistToTable = (initalClippingDist - pixelDistance).toFixed(2);
+            let depthValue = depthFrame.at(v.pt.y, v.pt.x);
+            let pixelDistance = depthScale * depthValue;
+            let pixelDistToTable = (initalClippingDist - pixelDistance).toFixed(2);
             // TODO use fs.createWriteStream or move it to different process
            /** coordinateLog += "x coordinate: " + v.pt.x + ", y coordinate: " + v.pt.y + ", Distance to table: " + pixelDistToTable + "\n";
             if(logCounter %200 == 0){
@@ -371,12 +372,12 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
                 coordinateLog = "";
             }
             **/
-           /*if(logCounter %30 == 0 && logging == true){
+           if(logCounter %30 == 0 && logging == true){
                ipcRenderer.send('write-to-file', {logText: "x coordinate: " + v.pt.x + ", y coordinate: " + v.pt.y + ", Distance to table: " + pixelDistToTable + " Time: " + new Date().toUTCString() + "\n"});
            }
             result.drawEllipse(
             new cv.RotatedRect(v.pt, new cv.Size(20, 20), 0), {
-                color: blue,
+                color: pixelDistToTable <= 0.2 ? col1 : pixelDistToTable <= 0.4 ? col2 : pixelDistToTable <= 0.6 ? col3 : pixelDistToTable <= 0.8 ? col4 : col5,
                 thickness: 2
             }
             );
@@ -386,10 +387,10 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
                 new cv.Point(v.pt.x + 25,v.pt.y),
                 cv.FONT_ITALIC,
                 0.5, {
-                color: blue,
+                color: pixelDistToTable <= 0.2 ? col1 : pixelDistToTable <= 0.4 ? col2 : pixelDistToTable <= 0.6 ? col3 : pixelDistToTable <= 0.8 ? col4 : col5,
                 thickness: 2
                 }
-            );*/
+            );
         });
 
 
@@ -515,7 +516,5 @@ function colorDetection(mat){
 
     const testMat = imgHSV.inRange(lower_hsv_threshold,upper_hsv_threshold);
     //const tstM = testMat.resize(750,1300);
-    //cv.imshow('jfjfv', testMat);
-    //cv.waitKey(1);
     detectSquares(testMat);
 }

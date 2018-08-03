@@ -26,6 +26,10 @@ let screenWidth = 1920;
 let shouldStream = true;
 //let coordinateLog = "";
 let logCounter = 0;
+var io = require('socket.io-client');
+let socket = io.connect("http://localhost:8000/", {
+    reconnection: true
+});
 ipcRenderer.on('started-calibrating', function (event) {
     ipcRenderer.send('log', {message: "test, started-calibrating"});
     if (!startedStreaming) {
@@ -117,9 +121,10 @@ function stream() {
                 //cv.imshow("depthFrame",resizedDepthFrame2);
                 //cv.waitKey(1);
                 logCounter++;
+                const result3 = result2.cvtColor(cv.COLOR_BGR2RGB);
 
-                if(result2) {
-                    const outBase64 = cv.imencode('.jpg', result2).toString('base64');
+                if(result3) {
+                    const outBase64 = cv.imencode('.jpg', result3).toString('base64');
                     ipcRenderer.send('camera-data', {base64String: outBase64});
                 }
             }
@@ -368,11 +373,13 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
             }
             **/
            if(logCounter %100 == 0){
-               ipcRenderer.send('write-to-file', {logText: "x coordinate: " + v.pt.x + ", y coordinate: " + v.pt.y + ", Distance to table: " + pixelDistToTable + "\n"});
+               //ipcRenderer.send('write-to-file', {logText: "x coordinate: " + v.pt.x + ", y coordinate: " + v.pt.y + ", Distance to table: " + pixelDistToTable + " Time: " + new Date().toUTCString() + "\n"});
+               let coords = "x coordinate: " + v.pt.x + ", y coordinate: " + v.pt.y + ", Distance to table: " + pixelDistToTable + " Time: " + new Date().toUTCString() + "\n";
+               socket.emit('logCoords', coords);
            }
             result.drawEllipse(
             new cv.RotatedRect(v.pt, new cv.Size(20, 20), 0), {
-                color: red,
+                color: blue,
                 thickness: 2
             }
             );
@@ -382,7 +389,7 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
                 new cv.Point(v.pt.x + 25,v.pt.y),
                 cv.FONT_ITALIC,
                 0.5, {
-                color: red,
+                color: blue,
                 thickness: 2
                 }
             );

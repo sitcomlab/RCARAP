@@ -63,7 +63,7 @@ function stream() {
     startedStreaming = true;
     const profile = pipeline.start();
 
-    for(let i = 0; i < 150; i++)
+    for(let i = 0; i < 300; i++)
     {
         //Wait for all configured streams to produce a frame
         pipeline.waitForFrames();

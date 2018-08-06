@@ -8,6 +8,7 @@ var targetRole;
 let screenHeight = 1080;
 let screenWidth = 1920;
 let displayStream = true;
+let green = new cv.Vec3(89, 255, 0);
 
 const ipcRenderer = require('electron').ipcRenderer;
 
@@ -45,12 +46,37 @@ function joinSession() {
                 const base64data = base64text.replace('data:image/jpeg;base64', '');
                 const buffer = Buffer.from(base64data, 'base64');
                 const base64image = cv.imdecode(buffer);
-                cv.imshow("videoStream", base64image);
                 if (data.mode && data.mode == "calibration") {
                     ipcRenderer.send('started-calibrating');
-                    cv.waitKey()
+                    let counter = 10;
+                    let timer = setInterval(function(){
+                        counter--;
+                        if(counter > -1) {
+                            base64image.drawRectangle(
+                                new cv.Point(screenWidth / 2 + 300, screenHeight / 2 + 300),
+                                new cv.Point(screenWidth / 2 - 300, screenHeight / 2 - 300),
+                                {color: new cv.Vec3(255, 255, 255), thickness: -1}
+                            );
+                            base64image.putText(
+                                String(counter),
+                                new cv.Point(screenWidth / 2, screenHeight / 2),
+                                cv.FONT_ITALIC,
+                                5, {
+                                    color: green,
+                                    thickness: 10
+                                }
+                            );
+                        }
+                        cv.imshow("videoStream", base64image);
+                        cv.waitKey(1000);
+                        if(counter == -3){
+                            clearInterval(timer);
+                            cv.destroyAllWindows();
+                        }
+                    },1000);
                 }
                 else {
+                    cv.imshow("videoStream", base64image);
                     cv.waitKey(1)
                 }
             }
@@ -79,12 +105,37 @@ function createServerSesson() {
                     .replace('data:image/png;base64', '');
                 const buffer = Buffer.from(base64data, 'base64');
                 const base64image = cv.imdecode(buffer);
-                cv.imshow("videoStream", base64image);
                 if (data.mode && data.mode == "calibration") {
                     ipcRenderer.send('started-calibrating');
-                    cv.waitKey()
+                    let counter = 10;
+                    let timer = setInterval(function(){
+                        counter--;
+                        if(counter > -1){
+                            base64image.drawRectangle(
+                                new cv.Point(screenWidth / 2 + 300, screenHeight / 2 + 300),
+                                new cv.Point(screenWidth / 2 - 300, screenHeight / 2 - 300),
+                                {color: new cv.Vec3(255, 255, 255), thickness: -1}
+                            );
+                            base64image.putText(
+                                String(counter),
+                                new cv.Point(screenWidth / 2, screenHeight / 2),
+                                cv.FONT_ITALIC,
+                                5, {
+                                    color: green,
+                                    thickness: 10
+                                }
+                            );
+                        }
+                        cv.imshow("videoStream", base64image);
+                        cv.waitKey(1000);
+                        if(counter == -3){
+                            clearInterval(timer);
+                            cv.destroyAllWindows();
+                        }
+                    },1000);
                 }
                 else {
+                    cv.imshow("videoStream", base64image);
                     cv.waitKey(1)
                 }
             }
@@ -103,7 +154,6 @@ function calibrate() {
     //TODO: screen size not the same for every laptop; not a stream?
     if(_socket){
         const whiteMat = new cv.Mat(screenHeight,screenWidth, cv.CV_8UC3, [255, 255, 255]);//1080,1920 /////750,1300
-        let green = new cv.Vec3(89, 255, 0);
         let buffer = 20;
         whiteMat.drawRectangle(new cv.Point(0+buffer, 0+buffer),
             new cv.Point(140, 140),

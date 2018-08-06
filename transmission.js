@@ -9,6 +9,7 @@ let screenHeight = 1080;
 let screenWidth = 1920;
 let displayStream = true;
 let green = new cv.Vec3(89, 255, 0);
+let black = new cv.Vec3(0,0,0);
 
 const ipcRenderer = require('electron').ipcRenderer;
 
@@ -48,7 +49,7 @@ function joinSession() {
                 const base64image = cv.imdecode(buffer);
                 if (data.mode && data.mode == "calibration") {
                     ipcRenderer.send('started-calibrating');
-                    let counter = 10;
+                    let counter = 20;
                     let timer = setInterval(function(){
                         counter--;
                         if(counter > -1) {
@@ -62,7 +63,7 @@ function joinSession() {
                                 new cv.Point(screenWidth / 2, screenHeight / 2),
                                 cv.FONT_ITALIC,
                                 5, {
-                                    color: green,
+                                    color: black,
                                     thickness: 10
                                 }
                             );
@@ -107,7 +108,7 @@ function createServerSesson() {
                 const base64image = cv.imdecode(buffer);
                 if (data.mode && data.mode == "calibration") {
                     ipcRenderer.send('started-calibrating');
-                    let counter = 10;
+                    let counter = 20;
                     let timer = setInterval(function(){
                         counter--;
                         if(counter > -1){
@@ -121,7 +122,7 @@ function createServerSesson() {
                                 new cv.Point(screenWidth / 2, screenHeight / 2),
                                 cv.FONT_ITALIC,
                                 5, {
-                                    color: green,
+                                    color: black,
                                     thickness: 10
                                 }
                             );

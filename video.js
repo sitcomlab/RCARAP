@@ -113,15 +113,15 @@ function stream() {
                 //ipcRenderer.send('log', {message: "color Mat: "+ result.cols +" "+ result.rows});
                 //ipcRenderer.send('log', {message: "depth Mat: "+ resizedDepthFrame.cols +" "+ resizedDepthFrame.rows});
                 //let resizedDepthFrame2 = resizedDepthFrame.convertTo(cv.CV_8UC3);
-                if(!adjsuted) {
-                    for (let i = 0; i < 600; i++) {
-                        //Wait for all configured streams to produce a frame
-                        pipeline.waitForFrames();
-                        const outBase64 = cv.imencode('.jpg', result).toString('base64');
-                        ipcRenderer.send('camera-data', {base64String: outBase64});
-                    }
-                }
-                adjusted = true;
+                // if(!adjusted) {
+                //     adjusted = true;
+                //     for (let i = 0; i < 600; i++) {
+                //         //Wait for all configured streams to produce a frame
+                //         pipeline.waitForFrames();
+                //         const outBase64 = cv.imencode('.jpg', result).toString('base64');
+                //         ipcRenderer.send('camera-data', {base64String: outBase64});
+                //     }
+                // }
                 let result2 = recognizeHands(result, resizedDepthFrame, depthScale);
                 //cv.imshow("depthFrame",resizedDepthFrame2);
                 //cv.waitKey(1);

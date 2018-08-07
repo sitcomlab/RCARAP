@@ -29,6 +29,9 @@ document.getElementById('endStreaming').addEventListener("click", function() {
     ipcRenderer.send('end-streaming');
 });
 
+/**
+ * Function is called when the "join session" button is clicked on the UI. Connects to the IP of the other machine.
+ */
 function joinSession() {
     io = require('socket.io-client');
     let hostIP = document.getElementById('joinSessionId').value;
@@ -43,12 +46,15 @@ function joinSession() {
         targetRole = "server";
         socket.on('clientEvent', function(data) {
             if(data.displayStream) {
+                //encode data for faster transmission
                 const base64text = data.base64String;
                 const base64data = base64text.replace('data:image/jpeg;base64', '');
                 const buffer = Buffer.from(base64data, 'base64');
                 const base64image = cv.imdecode(buffer);
                 if (data.mode && data.mode == "calibration") {
+                    //If calibration flag is set...
                     ipcRenderer.send('started-calibrating');
+                    //Displaying counter on calibration matrix
                     let counter = 20;
                     let timer = setInterval(function(){
                         counter--;
@@ -85,6 +91,7 @@ function joinSession() {
                 cv.destroyAllWindows();
             }
         });
+        //send camera stream...
         ipcRenderer.on('camera-data', function(event, data) {
                 data.displayStream = displayStream;
                 socket.emit('serverEvent', data);
@@ -92,6 +99,9 @@ function joinSession() {
     });
 }
 
+/**
+ * Same function like above, but for machine which creates the session
+ */
 function createServerSesson() {
     console.log("clicked on Create Session")
     io = require('socket.io').listen(3000);
@@ -151,8 +161,10 @@ function createServerSesson() {
     });
 }
 
+/**
+ * Function to create the calibration matrix with four green rectangles in the corners.
+ */
 function calibrate() {
-    //TODO: screen size not the same for every laptop; not a stream?
     if(_socket){
         const whiteMat = new cv.Mat(screenHeight,screenWidth, cv.CV_8UC3, [255, 255, 255]);//1080,1920 /////750,1300
         let buffer = 0;
@@ -168,14 +180,12 @@ function calibrate() {
         whiteMat.drawRectangle(new cv.Point(whiteMat.cols-140, whiteMat.rows-140),
             new cv.Point(whiteMat.cols-buffer, whiteMat.rows-buffer),
             { color: green, thickness: -1 });
-        //cv.imshow("test", whiteMat);
-        //cv.waitKey();
-        //detectSquares(whiteMat);
         const outBase64 =  cv.imencode('.jpg', whiteMat).toString('base64');
         let data = {base64String: outBase64, mode: "calibration"};
         let eventName = targetRole+"Event";
         console.log(eventName);
         data.displayStream = true;
+        // Sends calibration matrix to other machine.
         _socket.emit(eventName, data);
     }
 }

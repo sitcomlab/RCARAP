@@ -26,7 +26,7 @@ let screenWidth = 1920;
 let shouldStream = true;
 //let coordinateLog = "";
 let logCounter = 0;
-let logging = false;
+let logging = true;
 let adjusted = false;
 ipcRenderer.on('started-calibrating', function (event) {
     ipcRenderer.send('log', {message: "test, started-calibrating"});
@@ -126,7 +126,7 @@ function stream() {
                 //cv.imshow("depthFrame",resizedDepthFrame2);
                 //cv.waitKey(1);
                 logCounter++;
-                const result3 = result2.cvtColor(cv.COLOR_BGR2RGB);
+                const result3 = result2.cvtColor(cv.COLOR_BGR2RGBA);
 
                 if(result3) {
                     const outBase64 = cv.imencode('.jpg', result3).toString('base64');
@@ -301,6 +301,17 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
     return angleDeg < maxAngleDeg;
 });
 
+    const getMostCentralPointHands = (pointGroup) => {
+        // find center
+        const center = getCenterPt(pointGroup.map(ptWithIdx => ptWithIdx.pt));
+        // sort ascending by distance to center
+        return pointGroup.sort(
+            (ptWithIdx1, ptWithIdx2) => ptDist(ptWithIdx1.pt, center) - ptDist(ptWithIdx2.pt, center)
+        )[0];
+    };
+
+
+
     const blue = new cv.Vec(255, 0, 0);
     const green = new cv.Vec(0, 255, 0);
     const red = new cv.Vec(0, 0, 255);
@@ -328,6 +339,12 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
 
     for(var i=0;i<handContour.length;i++) {
         let hullIndices = getRoughHull(handContour[i], maxPointDist);
+        let moments = handContour[i].moments();
+       // ipcRenderer.send('logObject', {data:moments});
+        let centerX = moments.m10/moments.m00;
+        let centerY = moments.m01/moments.m00;
+
+
 
 // get defect points of hull to contour and return vertices
 // of each hull point to its defect points
@@ -345,6 +362,23 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
 //         }
 //     );
 
+        let depthValue = depthFrame.at(centerY, centerX);
+        let pixelDistance = depthScale * depthValue;
+        let pixelDistToTable = (initalClippingDist - pixelDistance).toFixed(2);
+
+        result.putText(
+            String(pixelDistToTable),
+            new cv.Point(centerX,centerY),
+            cv.FONT_ITALIC,
+            1.2, {
+                color: pixelDistToTable <= 0.2 ? col1 : pixelDistToTable <= 0.4 ? col2 : pixelDistToTable <= 0.6 ? col3 : pixelDistToTable <= 0.8 ? col4 : col5,
+                thickness: 2
+            }
+        );
+
+        if(logCounter %30 == 0 && logging == true){
+            ipcRenderer.send('write-to-file', {logText: "x coordinate: " + centerX + ", y coordinate: " + centerY + ", Distance to table: " + pixelDistToTable + " Time: " + new Date().toUTCString() + "\n"});
+        }
 // draw points and vertices
         verticesWithValidAngle.forEach((v) => {
             //     resizedImg.drawLine(
@@ -354,13 +388,13 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
             //         thickness: 2
             //     }
             // );
-            // resizedImg.drawLine(
-            //     v.pt,
-            //     v.d2, {
-            //         color: green,
-            //         thickness: 2
-            //     }
-            // );
+                // resizedImg.drawLine(
+                //     v.pt,
+                //     v.d2, {
+                //         color: green,
+                //         thickness: 2
+                //     }
+                // );
             // resizedImg.drawEllipse(
             //     new cv.RotatedRect(v.pt, new cv.Size(20, 20), 0), {
             //         color: red,
@@ -369,6 +403,7 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
             // );
             //let depthData = depthFrame.getData();
            // ipcRenderer.send('log', {message: "x coordinates: " + v.pt.x + "y coordinates: " + v.pt.y});
+
             let depthValue = depthFrame.at(v.pt.y, v.pt.x);
             let pixelDistance = depthScale * depthValue;
             let pixelDistToTable = (initalClippingDist - pixelDistance).toFixed(2);
@@ -382,17 +417,15 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
                 coordinateLog = "";
             }
             **/
-           if(logCounter %30 == 0 && logging == true){
-               ipcRenderer.send('write-to-file', {logText: "x coordinate: " + v.pt.x + ", y coordinate: " + v.pt.y + ", Distance to table: " + pixelDistToTable + " Time: " + new Date().toUTCString() + "\n"});
-           }
             result.drawEllipse(
-            new cv.RotatedRect(v.pt, new cv.Size(20, 20), 0), {
-                color: pixelDistToTable <= 0.2 ? col1 : pixelDistToTable <= 0.4 ? col2 : pixelDistToTable <= 0.6 ? col3 : pixelDistToTable <= 0.8 ? col4 : col5,
+            new cv.RotatedRect(v.pt, new cv.Size(5, 5), 0), {
+                color: green,
                 thickness: 2
             }
             );
 
-            result.putText(
+
+            /**result.putText(
                 String(pixelDistToTable),
                 new cv.Point(v.pt.x + 25,v.pt.y),
                 cv.FONT_ITALIC,
@@ -400,8 +433,11 @@ function recognizeHands(colorMat, depthFrame, depthScale) {
                 color: pixelDistToTable <= 0.2 ? col1 : pixelDistToTable <= 0.4 ? col2 : pixelDistToTable <= 0.6 ? col3 : pixelDistToTable <= 0.8 ? col4 : col5,
                 thickness: 2
                 }
-            );
+          ); **/
         });
+
+
+
 
 
 // display detection result

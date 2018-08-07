@@ -1,3 +1,8 @@
+/**
+ * This file writes the incoming data into a file. The incoming data in this case are the coordinates of the tracked hands
+ * icluding the timestamp
+ * @type {"fs"} fs is used to stream the data into the file handCoordinates.js
+ */
 fs = require('fs');
 const ipcRenderer = require('electron').ipcRenderer;
 var fileStream;

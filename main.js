@@ -7,11 +7,9 @@ const url = require('url')
 const ipcMain = require('electron').ipcMain;
 const util = require("util");
 
-// Keep a global reference of the window object, if you don't, the window will
-// be closed automatically when the JavaScript object is garbage collected.
 let mainWindow;
 let backgroundWindow;
-//let keepStreaming = false;
+let backgroundWindow2;
 
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -22,7 +20,7 @@ function createWindow() {
     backgroundWindow = new BrowserWindow({
         width: 800,
         height: 600,
-        show: true
+        show: false
     })
 
     backgroundWindow2 = new BrowserWindow({
@@ -36,6 +34,7 @@ function createWindow() {
         protocol: 'file:',
         slashes: true
     }))
+
     backgroundWindow.loadURL(url.format({
         pathname: path.join(__dirname, 'background.html'),
         protocol: 'file:',
@@ -65,7 +64,6 @@ app.on('ready', () => {
 })
 
 app.on('window-all-closed', function() {
-    //video.setWindowIsOpen(false);
     if (process.platform !== 'darwin') {
         app.quit()
     }
@@ -80,9 +78,11 @@ app.on('activate', function() {
 ipcMain.on('camera-data', function(event, data) {
   mainWindow.webContents.send('camera-data', data)
 });
+
 ipcMain.on('log', function(event, data) {
     console.log(data.message);
 });
+
 ipcMain.on('started-calibrating', function(event) {
     backgroundWindow.webContents.send('started-calibrating')
 });
@@ -90,9 +90,11 @@ ipcMain.on('started-calibrating', function(event) {
 ipcMain.on('write-to-file', function(event,data) {
     backgroundWindow2.webContents.send('write-to-file', data)
 });
+
 ipcMain.on('create-write-stream', function(event,data) {
     backgroundWindow2.webContents.send('create-write-stream', data)
 });
+
 ipcMain.on('end-streaming', function(event, data) {
     backgroundWindow2.webContents.send('end-write-stream', data)
 });

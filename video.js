@@ -26,7 +26,7 @@ let screenWidth = 1920;
 let shouldStream = true;
 //let coordinateLog = "";
 let logCounter = 0;
-let logging = true;
+let logging = false;
 let adjusted = false;
 ipcRenderer.on('started-calibrating', function (event) {
     ipcRenderer.send('log', {message: "test, started-calibrating"});
@@ -35,8 +35,9 @@ ipcRenderer.on('started-calibrating', function (event) {
     }
 });
 
-ipcRenderer.send('create-write-stream', {filename: "handCoordinates.txt"});
-
+if(logging==true) {
+    ipcRenderer.send('create-write-stream', {filename: "handCoordinates.txt"});
+}
 //console.log('Press Up/Down to change the depth clipping distance.');
 /*console.log(this);
  this.window.setKeyCallback((key, scancode, action, modes) => {

@@ -155,7 +155,7 @@ function calibrate() {
     //TODO: screen size not the same for every laptop; not a stream?
     if(_socket){
         const whiteMat = new cv.Mat(screenHeight,screenWidth, cv.CV_8UC3, [255, 255, 255]);//1080,1920 /////750,1300
-        let buffer = 20;
+        let buffer = 0;
         whiteMat.drawRectangle(new cv.Point(0+buffer, 0+buffer),
             new cv.Point(140, 140),
             { color: green, thickness: -1 });

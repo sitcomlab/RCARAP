@@ -33,3 +33,7 @@ The application has to be started on both machines. One machine (Machine A) will
 * Inclusion of drawing on the plan (annotations) or highlighting of elements
 * Recognition of different persons (i.e. by using gloves with different colors)
 * Implementation of gesture recognition
+
+# Installation issues
+* Make sure that the prerequisites of the Intel RealSense SDK wrapper for Node.js are fulfilled. You can find them here: https://github.com/IntelRealSense/librealsense/tree/master/wrappers/nodejs
+* Since the installation of the node packages produces long pathnames install it on the desktop or at another location with short paths

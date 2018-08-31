@@ -39,3 +39,5 @@ The application has to be started on both machines. One machine (Machine A) will
 # Installation issues
 * Make sure that the prerequisites of the Intel RealSense SDK wrapper for Node.js are fulfilled. You can find them here: https://github.com/IntelRealSense/librealsense/tree/master/wrappers/nodejs
 * Since the installation of the node packages produces long pathnames install it on the desktop or at another location with short paths
+* If an error appears concerning missing C++ header files, e.g. ```atlcomcli.h``` or ```atlstr.h``` , please use the developer console  for VS2017 or VS2015, depending on which version of Visual Studio is used.
+
